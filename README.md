@@ -10,8 +10,9 @@ This is a project to predict parking meter availability for ParkMobile.
 
 	$ python3 test.py 2020 1 17 9 52
 
-- In each folder,
-	/meter_configs	meter zone definitions, locations, etc.
-	/models		current model files
-	/output		the output of test.py results
+- In each folder,<br/>
+
+	/meter_configs &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; meter zone definitions, locations, etc. <br/>
+	/models	 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; current model files <br/>
+	/output	 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; the output of test.py results <br/>
 
