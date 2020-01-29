@@ -42,25 +42,7 @@ def transform_datetime(year, month, day, hour, minutes):
 def clamp(n, minn = 0, maxn = 1):
     return max(min(maxn, n), minn)
 
-if __name__ == "__main__":
-    if len(sys.argv) == 6:
-        year = int(sys.argv[1])
-        month = int(sys.argv[2])
-        day = int(sys.argv[3])
-        hour = int(sys.argv[4])
-        minutes = int(sys.argv[5])
-    else:
-        if len(sys.argv) > 1:
-            print("specify datetime like yyyy MM dd hh mm : 2020 02 15 10 30")
-            sys.exit()
-        else:
-            now = datetime.now()
-            year = now.year
-            month = now.month
-            day = now.weekday()
-            hour = now.hour
-            minutes = now.minute
-        
+def do_prediction(year, month, day, hour, minutes):
     model_inputs = transform_datetime(year, month, day, hour, minutes)
     # read zone information
     zone_centroid_cluster = pd.read_csv("meter_config/zone_centroid_cluster_short_north.csv")
@@ -82,12 +64,30 @@ if __name__ == "__main__":
             current_model = models[cluster_id]
             predicted_val = current_model.predict( np.asarray(model_inputs).reshape(1,-1) )[0]
             prediction_output[zone_id] = round(clamp(predicted_val), 4) # limit this availability to be between 0 and 1
+    return prediction_output
+
+if __name__ == "__main__":
+    if len(sys.argv) == 6:
+        year = int(sys.argv[1])
+        month = int(sys.argv[2])
+        day = int(sys.argv[3])
+        hour = int(sys.argv[4])
+        minutes = int(sys.argv[5])
+    else:
+        if len(sys.argv) > 1:
+            print("specify datetime like yyyy MM dd hh mm : 2020 02 15 10 30")
+            sys.exit()
+        else:
+            now = datetime.now()
+            year = now.year
+            month = now.month
+            day = now.weekday()
+            hour = now.hour
+            minutes = now.minute
+        
+    prediction_output = do_prediction(year, month, day, hour, minutes)
     
     print(prediction_output)
-
-    # write into json file
-    with open('output\predicted_values_'+'_'.join([str(year), str(month), str(day), str(hour), str(minutes)]) + '.txt', 'w') as outfile:
-        json.dump(prediction_output, outfile)
 
 
 
