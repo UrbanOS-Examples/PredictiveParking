@@ -1,5 +1,5 @@
 from flask import Flask, escape, request
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import jsonify
 import test
 
@@ -8,7 +8,8 @@ app = Flask(__name__)
 
 @app.route('/')
 def prediction():
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
+    #local = now.astimezone(timezone('US/Eastern'))
     year = now.year
     month = now.month
     day = now.weekday()

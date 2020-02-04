@@ -20,7 +20,7 @@ node ('infrastructure') {
         scos.doCheckoutStage()
 
         doStageUnlessRelease('Build') {
-            image = docker.build("scos/predictive_parking:${env.GIT_COMMIT_HASH}")
+            image = docker.build("scos/predictive-parking:${env.GIT_COMMIT_HASH}")
         }
 
         doStageUnlessRelease('Deploy to Dev') {
@@ -52,7 +52,7 @@ node ('infrastructure') {
             scos.applyAndPushGitHubTag(promotionTag)
 
             scos.withDockerRegistry {
-                image = scos.pullImageFromDockerRegistry("scos/predictive_parking", env.GIT_COMMIT_HASH)
+                image = scos.pullImageFromDockerRegistry("scos/predictive-parking", env.GIT_COMMIT_HASH)
                 image.push(releaseTag)
                 image.push(promotionTag)
             }
