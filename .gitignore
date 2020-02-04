@@ -1,0 +1,9 @@
+.terraform/
+outputs/
+terraform.tfstate.d/
+*.out
+*.plan
+
+__pycache__/
+
+.DS_Store
