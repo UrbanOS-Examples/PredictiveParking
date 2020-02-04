@@ -55,7 +55,8 @@ def do_prediction(year, month, day, hour, minutes):
             loaded_model = pickle.load(open(model_path + "/model_cluster" + str(int(cluster_id)), 'rb'))
             models[str(int(cluster_id))] = loaded_model
 
-    prediction_output = {}
+    prediction_output = []
+
     for idx, row in zone_centroid_cluster.iterrows():
         zone_id = str(row['zoneID'])
         cluster_id = row['cluster_id']
@@ -63,7 +64,13 @@ def do_prediction(year, month, day, hour, minutes):
             cluster_id = str(int(cluster_id))
             current_model = models[cluster_id]
             predicted_val = current_model.predict( np.asarray(model_inputs).reshape(1,-1) )[0]
-            prediction_output[zone_id] = round(clamp(predicted_val), 4) # limit this availability to be between 0 and 1
+
+            prediction = {
+                "zoneId": zone_id,
+                "availabilityPrediction": round(clamp(predicted_val), 4)
+            }
+            
+            prediction_output.append(prediction)
     return prediction_output
 
 if __name__ == "__main__":
