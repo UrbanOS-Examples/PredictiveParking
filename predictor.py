@@ -2,7 +2,6 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 import pickle
-import json
 
 def predict(input_datetime):
     if not is_valid_input_datetime(input_datetime): return []
@@ -42,8 +41,6 @@ def is_valid_input_datetime(input_datetime):
     return input_datetime.weekday() < 6 and input_datetime.hour >= 8 and input_datetime.hour < 22
 
 def transform_datetime(input_datetime):
-    print("Predicting parking availability at", input_datetime)
-
     hour_index = 2 * (input_datetime.hour - 8) + input_datetime.minute//30
     hour_input = [0]*28
     hour_input[hour_index] = 1

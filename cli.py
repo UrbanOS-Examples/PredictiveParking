@@ -18,6 +18,7 @@ if __name__ == "__main__":
         else:
             input_datetime = datetime.now()
 
+    print("Predicting parking availability at", input_datetime, '...')
     prediction_output = predictor.predict(input_datetime)
 
     if prediction_output:
