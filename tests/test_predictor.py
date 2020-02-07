@@ -1,4 +1,4 @@
-import predictor
+from app import predictor
 from datetime import datetime
 
 import pytest

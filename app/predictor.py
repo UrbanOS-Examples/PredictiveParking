@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 import pandas as pd
 import numpy as np
@@ -8,10 +9,11 @@ def predict(input_datetime):
 
     model_inputs = transform_datetime(input_datetime)
     # read zone information
-    zone_centroid_cluster = pd.read_csv("meter_config/zone_centroid_cluster_short_north.csv")
+    path = os.path.dirname(os.path.abspath(__file__))
+    zone_centroid_cluster = pd.read_csv(path + "/meter_config/zone_centroid_cluster_short_north.csv")
 
     # load the model from disk
-    model_path = "models"
+    model_path = path + "/models"
     models = {}
     for cluster_id in zone_centroid_cluster.cluster_id.unique():
         if not np.isnan(cluster_id):
