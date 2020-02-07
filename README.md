@@ -16,3 +16,13 @@ This is a project to predict parking meter availability for ParkMobile.
 	/models	 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; current model files <br/>
 	/output	 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; the output of test.py results <br/>
 
+# Running the application local
+```bash
+pip3 install -r app/requirements.txt
+flask run
+```
+
+# Running tests
+```bash
+pytest
+```
