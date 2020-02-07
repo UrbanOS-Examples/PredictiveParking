@@ -52,7 +52,8 @@ export KUBECONFIG=${local_file.kubeconfig.filename}
 
 export AWS_DEFAULT_REGION=us-east-2
 helm upgrade --install predictive-parking ./chart --namespace=predictive-parking \
-    --values ${local_file.helm_vars.filename}
+    --values ${local_file.helm_vars.filename} \
+    ${var.extra_helm_args}
 EOF
   }
 
@@ -61,6 +62,11 @@ EOF
     # ${uuid()} will always be different thus always executing above local-exec
     hack_that_always_forces_null_resources_to_execute = "${uuid()}"
   }
+}
+
+variable "extra_helm_args" {
+  description = "Helm options"
+  default     = ""
 }
 
 variable "is_internal" {

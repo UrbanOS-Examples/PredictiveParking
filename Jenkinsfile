@@ -28,7 +28,9 @@ node ('infrastructure') {
                 image.push()
                 image.push('latest')
             }
-            deployTo(environment: 'dev')
+
+            def extraHelmArgs =  "--recreate-pods --set image.tag='latest'"
+            deployTo(environment: 'dev', extraVars: [ 'extra_helm_args': extraHelmArgs ])
         }
 
         doStageIfPromoted('Deploy to Staging')  {
@@ -64,8 +66,10 @@ def deployTo(params = [:]) {
     def environment = params.get('environment')
     if (environment == null) throw new IllegalArgumentException("environment must be specified")
 
+    def extraVars = params.get('extraVars', [:])
+
     def terraform = scos.terraform(environment)
     sh "terraform init && terraform workspace new ${environment}"
-    terraform.plan(terraform.defaultVarFile)
+    terraform.plan(terraform.defaultVarFile, extraVars)
     terraform.apply()
 }
