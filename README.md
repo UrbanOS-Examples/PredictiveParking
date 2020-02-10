@@ -4,11 +4,11 @@ This is a project to predict parking meter availability for ParkMobile.
 - Dependencies/libaries: scikit-learn, numpy, pandas
 - How to run a prediction:
 
-	$ python3 test.py
+	$ python3 app/cli.py
 
 	OR
 
-	$ python3 test.py 2020 1 17 9 52
+	$ python3 app/cli.py 2020 1 17 9 52
 
 - In each folder,<br/>
 
@@ -16,3 +16,13 @@ This is a project to predict parking meter availability for ParkMobile.
 	/models	 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; current model files <br/>
 	/output	 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; the output of test.py results <br/>
 
+# Running the application local
+```bash
+pip3 install -r app/requirements.txt
+flask run
+```
+
+# Running tests
+```bash
+pytest
+```

@@ -1,0 +1,7 @@
+Flask==1.1.1
+scikit-learn==0.22.1
+numpy==1.18.1
+pandas==0.25.3
+uWSGI==2.0.18
+
+pytest

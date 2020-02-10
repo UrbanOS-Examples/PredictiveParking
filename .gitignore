@@ -1,0 +1,13 @@
+.terraform/
+outputs/
+terraform.tfstate.d/
+*.out
+*.plan
+
+venv/
+
+__pycache__/
+*.pyc
+.pytest_cache/
+
+.DS_Store
