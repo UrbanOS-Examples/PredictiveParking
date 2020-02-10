@@ -2,8 +2,6 @@ FROM python:3.7-slim
 
 COPY ./app /app
 
-WORKDIR /app
-
 RUN apt-get clean \
     && apt-get -y update
 
@@ -13,8 +11,13 @@ RUN apt-get -y install nginx \
     && apt-get -y install build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+RUN pip install -r app/requirements.txt
+
+COPY ./tests /tests
+RUN pytest /tests && rm -rf /tests
+
 COPY nginx.conf /etc/nginx
 
-RUN pip install -r requirements.txt
+WORKDIR /app
 
 CMD ["./start.sh"]
