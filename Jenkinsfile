@@ -49,7 +49,8 @@ node ('infrastructure') {
             def releaseTag = env.BRANCH_NAME
             def promotionTag = 'prod'
 
-            deployTo(environment: 'prod', internal: false)
+            def extraHelmArgs =  "--set image.tag='${releaseTag}'"
+            deployTo(environment: 'prod', extraVars: [ 'extra_helm_args': extraHelmArgs ])
 
             scos.applyAndPushGitHubTag(promotionTag)
 
