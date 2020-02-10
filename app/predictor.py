@@ -1,4 +1,4 @@
-import os
+from os import path
 from datetime import datetime
 import pandas as pd
 import numpy as np
@@ -7,17 +7,19 @@ import pickle
 def predict(input_datetime):
     if not is_valid_input_datetime(input_datetime): return []
 
+    base_dir = path.dirname(path.abspath(__file__))
+
     model_inputs = transform_datetime(input_datetime)
     # read zone information
-    path = os.path.dirname(os.path.abspath(__file__))
-    zone_centroid_cluster = pd.read_csv(path + "/meter_config/zone_centroid_cluster_short_north.csv")
+    zone_centroid_cluster = pd.read_csv(path.join(base_dir, "meter_config/zone_centroid_cluster_short_north.csv"))
 
     # load the model from disk
-    model_path = path + "/models"
+    model_path = path.join(base_dir, "models")
     models = {}
     for cluster_id in zone_centroid_cluster.cluster_id.unique():
         if not np.isnan(cluster_id):
-            loaded_model = pickle.load(open(model_path + "/model_cluster" + str(int(cluster_id)), 'rb'))
+            model_cluster_file = path.join(model_path, "model_cluster" + str(int(cluster_id)))
+            loaded_model = pickle.load(open(model_cluster_file, 'rb'))
             models[str(int(cluster_id))] = loaded_model
 
     prediction_output = []

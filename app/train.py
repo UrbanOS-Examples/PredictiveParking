@@ -1,5 +1,5 @@
 # import libraries
-import os.path
+from os import path
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -13,7 +13,8 @@ from sklearn.model_selection import cross_val_score
 from sklearn.neural_network import MLPRegressor
 
 # read cluster and zone definition file
-zone_centroid_cluster = pd.read_csv("meter_config/zone_centroid_cluster_short_north.csv")
+base_dir = path.dirname(path.abspath(__file__))
+zone_centroid_cluster = pd.read_csv(path.join(base_dir, "meter_config/zone_centroid_cluster_short_north.csv"))
 
 
 def parking_cluster_training(model_path = None):
@@ -32,7 +33,7 @@ def parking_cluster_training(model_path = None):
                     trans_in_cluster_month['timestamp'] = pd.to_datetime(trans_in_cluster_month['timestamp'])
                     trans_in_cluster_month = trans_in_cluster_month.set_index("timestamp")
                     trans_in_cluster_month['availableRate'] = trans_in_cluster_month['available']/trans_in_cluster_month['pole']
-                    trans_in_cluster_month = trans_in_cluster_month.between_time('08:00', '22:00', include_start = True, include_end = False) 
+                    trans_in_cluster_month = trans_in_cluster_month.between_time('08:00', '22:00', include_start = True, include_end = False)
                     trans_in_cluster_month = trans_in_cluster_month[(trans_in_cluster_month.index.dayofweek != 6)] # exclude sunday
                     trans_in_cluster = trans_in_cluster.append(trans_in_cluster_month)
             trans_in_cluster['hour'] = list(zip(trans_in_cluster.index.hour,trans_in_cluster.index.minute))
@@ -58,10 +59,10 @@ def parking_cluster_training(model_path = None):
             y = y.values.reshape(y.shape[0])
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=666)
             # {'identity', 'logistic', 'tanh', 'relu'}
-            mlp = MLPRegressor(hidden_layer_sizes=(100), activation='relu', solver='adam', alpha=0.0001, 
+            mlp = MLPRegressor(hidden_layer_sizes=(100), activation='relu', solver='adam', alpha=0.0001,
                             batch_size='auto', learning_rate='constant', learning_rate_init=0.001, power_t=0.5,
-                            max_iter=200, shuffle=True, random_state=None, tol=0.0001, verbose=False, 
-                            warm_start=False, momentum=0.9, nesterovs_momentum=True, early_stopping=False, 
+                            max_iter=200, shuffle=True, random_state=None, tol=0.0001, verbose=False,
+                            warm_start=False, momentum=0.9, nesterovs_momentum=True, early_stopping=False,
                             validation_fraction=0.3, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
 
             print("Start training ...")
@@ -73,11 +74,11 @@ def parking_cluster_training(model_path = None):
 
             print('Start cross validation ...')
             scores = cross_val_score(mlp, X_train, y_train, cv=5)
-            
+
             print("each time scores are", scores)
             print("average score is", sum(scores)/len(scores))
 
-            
+
             if model_path is not None:
                 filename = model_path + "/model_cluster"  + str(int(cluster_id))
             else:
@@ -88,7 +89,7 @@ def parking_cluster_training(model_path = None):
 
 if __name__ == "__main__":
     output_path = input("Output model directory:")
-    if not os.path.isdir(output_path):
+    if not path.isdir(output_path):
         raise OSError("Input path is not a directory.")
     print(output_path)
     try:
