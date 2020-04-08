@@ -16,7 +16,7 @@ def predictions():
     if zoneParam != None:
         zone_ids = zoneParam.split(',')
     else:
-        zone_ids = "All"
+        zone_ids = 'All'
 
     results = predictor.predict(now, zone_ids)
     return jsonify(results)
