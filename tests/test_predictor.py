@@ -20,3 +20,11 @@ def test_predict_returns_no_predictions_on_sundays():
     predictions = predictor.predict(datetime(2020, 2, 9, 12, 0, 0))
 
     assert len(predictions) == 0
+
+def test_predict_for_provided_zones():
+    zone_ids = ['31001', '31006']
+    predictions = predictor.predict(datetime(2020, 2, 8, 13, 29, 0), zone_ids)
+
+    assert predictions
+    for prediction in predictions:
+        assert prediction['zoneId'] in zone_ids
