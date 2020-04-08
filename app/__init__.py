@@ -11,14 +11,14 @@ app = Flask(__name__)
 @app.route('/api/v1/predictions')
 def predictions():
     now = datetime.now(timezone('US/Eastern'))
-    zoneParam = request.args.get('zones')
-
-    if zoneParam:
-        zones = zoneParam.split(',')
+    zoneParam = request.args.get('zone_ids')
+    logging.warn(zoneParam)
+    if zoneParam != None:
+        zone_ids = zoneParam.split(',')
     else:
-        zones = "All"
+        zone_ids = "All"
 
-    results = predictor.predict(now, zones)
+    results = predictor.predict(now, zone_ids)
     return jsonify(results)
 
 if __name__ == '__main__':

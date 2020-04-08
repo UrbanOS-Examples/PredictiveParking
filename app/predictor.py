@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import pickle
 
-def predict(input_datetime, zones='All'):
+def predict(input_datetime, zone_ids='All'):
     if not is_valid_input_datetime(input_datetime): return []
 
     base_dir = path.dirname(path.abspath(__file__))
@@ -26,7 +26,7 @@ def predict(input_datetime, zones='All'):
 
     for idx, row in zone_centroid_cluster.iterrows():
         zone_id = str(row['zoneID'])
-        if zones != 'All' and zone_id not in zones: continue
+        if zone_ids != 'All' and zone_id not in zone_ids: continue
 
         cluster_id = row['cluster_id']
         if not np.isnan(cluster_id):
