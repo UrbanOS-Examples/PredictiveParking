@@ -8,9 +8,21 @@ def test_adjusts_730_to_800_to_800():
 
     assert now == expected
 
+def test_adjusts_730_to_800():
+    expected = datetime(2020, 2, 7, 8, 00, 0)
+    now = now_adjusted.adjust(datetime(2020, 2, 7, 7, 30, 0))
+
+    assert now == expected
+
 def test_adjusts_2200_to_2030_to_2200():
     expected = datetime(2020, 2, 7, 22, 00, 0)
     now = now_adjusted.adjust(datetime(2020, 2, 7, 22, 9, 0))
+
+    assert now == expected
+
+def test_adjusts_2030_to_2200():
+    expected = datetime(2020, 2, 7, 22, 00, 0)
+    now = now_adjusted.adjust(datetime(2020, 2, 7, 22, 30, 0))
 
     assert now == expected
 

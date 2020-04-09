@@ -6,9 +6,9 @@ def adjust(now):
     today10pm = now.replace(hour=22, minute=0, second=0, microsecond=0)
     today1030pm = today10pm.replace(minute=30)
 
-    if today730am < now < today8am:
+    if today730am <= now < today8am:
         return today8am
-    elif today10pm < now < today1030pm:
+    elif today10pm < now <= today1030pm:
         return today10pm
     else:
         return now
