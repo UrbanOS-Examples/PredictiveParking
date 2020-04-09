@@ -2,6 +2,7 @@ from flask import Flask, escape, request, jsonify
 from datetime import datetime
 from pytz import timezone
 from app import predictor
+from app import now_adjusted
 
 import logging
 logging.basicConfig(level=logging.NOTSET)
@@ -10,7 +11,7 @@ app = Flask(__name__)
 
 @app.route('/api/v1/predictions')
 def predictions():
-    now = datetime.now(timezone('US/Eastern'))
+    now = now_adjusted.adjust(datetime.now(timezone('US/Eastern')))
     zoneParam = request.args.get('zone_ids')
     logging.warn(zoneParam)
     if zoneParam != None:
