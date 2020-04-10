@@ -13,7 +13,6 @@ app = Flask(__name__)
 def predictions():
     now = now_adjusted.adjust(datetime.now(timezone('US/Eastern')))
     zoneParam = request.args.get('zone_ids')
-    logging.warn(zoneParam)
     if zoneParam != None:
         zone_ids = zoneParam.split(',')
     else:
