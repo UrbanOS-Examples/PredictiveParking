@@ -1,7 +1,7 @@
 # PredictiveParking
 This is a project to predict parking meter availability for ParkMobile.
 - Environment: Python3
-- Dependencies/libaries: scikit-learn, numpy, pandas
+- Dependencies/libaries: scikit-learn 0.22.1, numpy 1.18.1, pandas 0.23.4, pyodbc 4.0.28
 - How to run a prediction:
 
 	$ python3 app/cli.py
