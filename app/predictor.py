@@ -11,24 +11,26 @@ def predict(input_datetime, zone_ids='All'):
 
     model_inputs = transform_datetime(input_datetime)
     # read zone information
-    zone_centroid_cluster = pd.read_csv(path.join(base_dir, "meter_config/zone_centroid_cluster_short_north.csv"))
+    # zone_centroid_cluster = pd.read_csv(path.join(base_dir, "meter_config/zone_centroid_cluster_short_north.csv"))
+    zone_cluster = pd.read_csv(path.join(base_dir, "meter_config/zone_cluster16_short_north_downtown_15_19.csv"))
 
     # load the model from disk
     model_path = path.join(base_dir, "models")
     models = {}
-    for cluster_id in zone_centroid_cluster.cluster_id.unique():
+    for cluster_id in zone_cluster.clusterID.unique():
         if not np.isnan(cluster_id):
-            model_cluster_file = path.join(model_path, "model_cluster" + str(int(cluster_id)))
+            # model_cluster_file = path.join(model_path, "model_cluster" + str(int(cluster_id)))
+            model_cluster_file = path.join(model_path, "mlp_shortnorth_downtown_50_50_19_0414_cluster" + str(int(cluster_id)))
             loaded_model = pickle.load(open(model_cluster_file, 'rb'))
             models[str(int(cluster_id))] = loaded_model
 
     prediction_output = []
 
-    for idx, row in zone_centroid_cluster.iterrows():
+    for idx, row in zone_cluster.iterrows():
         zone_id = str(row['zoneID'])
         if zone_ids != 'All' and zone_id not in zone_ids: continue
 
-        cluster_id = row['cluster_id']
+        cluster_id = row['clusterID']
         if not np.isnan(cluster_id):
             cluster_id = str(int(cluster_id))
             current_model = models[cluster_id]
