@@ -1,5 +1,6 @@
 .terraform/
 outputs/
+app/output/*.txt
 terraform.tfstate.d/
 *.out
 *.plan
