@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import json
+import os.path
 
 
 def transform_datetime(year, month, day, hour, minutes):
@@ -86,6 +87,6 @@ if __name__ == "__main__":
     print(prediction_output)
 
     # write into json file
-    with open('output\predicted_values_'+'_'.join([str(year), str(month), str(day), str(hour), str(minutes)]) + '.txt', 'w') as outfile:
+    with open(os.path.abspath("") + '/output/predicted_values_'+'_'.join([str(year), str(month), str(day), str(hour), str(minutes)]) + '.txt', 'w') as outfile:
         json.dump(prediction_output, outfile)
     
