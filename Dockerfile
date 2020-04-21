@@ -13,6 +13,8 @@ RUN apt-get -y install nginx \
 
 RUN pip install -r app/requirements.txt
 
+RUN chmod +x app/start.sh
+
 COPY ./tests /tests
 RUN pytest /tests && rm -rf /tests
 
