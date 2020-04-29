@@ -3,6 +3,8 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 import pickle
+import logging
+logging.basicConfig(level=logging.NOTSET)
 
 def predict(input_datetime, zone_ids='All'):
     if not is_valid_input_datetime(input_datetime): return []
@@ -20,7 +22,7 @@ def predict(input_datetime, zone_ids='All'):
     for cluster_id in zone_cluster.clusterID.unique():
         if not np.isnan(cluster_id):
             # model_cluster_file = path.join(model_path, "model_cluster" + str(int(cluster_id)))
-            model_cluster_file = path.join(model_path, "mlp_shortnorth_downtown_50_50_19_2020-04-28_cluster" + str(int(cluster_id)))
+            model_cluster_file = path.join(model_path, "mlp_shortnorth_downtown_50_50_19_2020-04-29_cluster" + str(int(cluster_id)))
             loaded_model = pickle.load(open(model_cluster_file, 'rb'))
             models[str(int(cluster_id))] = loaded_model
 
@@ -34,8 +36,9 @@ def predict(input_datetime, zone_ids='All'):
         if not np.isnan(cluster_id):
             cluster_id = str(int(cluster_id))
             current_model = models[cluster_id]
+            logging.info(cluster_id)
             predicted_val = current_model.predict( np.asarray(model_inputs).reshape(1,-1) )[0]
-
+            logging.info(predicted_val)
             prediction = {
                 "zoneId": zone_id,
                 "availabilityPrediction": round(clamp(predicted_val), 4)
