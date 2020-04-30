@@ -22,7 +22,7 @@ def predict(input_datetime, zone_ids='All'):
     for cluster_id in zone_cluster.clusterID.unique():
         if not np.isnan(cluster_id):
             # model_cluster_file = path.join(model_path, "model_cluster" + str(int(cluster_id)))
-            model_cluster_file = path.join(model_path, "mlp_shortnorth_downtown_50_50_19_2020-04-29_cluster" + str(int(cluster_id)))
+            model_cluster_file = path.join(model_path, "mlp_shortnorth_downtown_50_50_19_2020-04-30_cluster" + str(int(cluster_id)))
             loaded_model = pickle.load(open(model_cluster_file, 'rb'))
             models[str(int(cluster_id))] = loaded_model
 
