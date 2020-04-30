@@ -22,13 +22,11 @@ from sklearn.neural_network import MLPRegressor
 def sql_read(server_name, db_name, sql_query, uid = None, pwd = None):
     # connect to sql server, read from a table and query, return a pandas dataframe
     if uid is not None and pwd is not None:
-        logging.info("Auth with username and password")
         conn_specs = 'Driver={ODBC Driver 17 for SQL Server};Server=' \
                 + server_name + ';Database=' + db_name \
                 + ';UID=' + uid + ';PWD=' + pwd \
                 + ';'
     else:
-        logging.info("Auth with trusted connection")
         conn_specs = 'Driver={SQL Server Native Client 11.0};Server=' \
                     + server_name + ';Database=' + db_name \
                     + ';Trusted_Connection=yes;MARS_Connection=yes;'
@@ -50,10 +48,7 @@ if __name__ == "__main__":
     
     if pwd == None:
         pwd = getpass.getpass()
-        # pwd = input('Enter sql server database password:')
     
-    logging.info(server_name)
-
     sql_query = "SELECT [zone_name] \
                 ,[semihour] \
                 ,[occu_min] \
@@ -72,7 +67,6 @@ if __name__ == "__main__":
 
     try:
         if len(uid) > 0 and len(pwd) > 0:
-            logging.info("Logging in")
             occu_df = sql_read(server_name, db_name, sql_query, uid, pwd)
         else:
             occu_df = sql_read(server_name, db_name, sql_query)

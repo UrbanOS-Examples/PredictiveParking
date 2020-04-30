@@ -36,9 +36,7 @@ def predict(input_datetime, zone_ids='All'):
         if not np.isnan(cluster_id):
             cluster_id = str(int(cluster_id))
             current_model = models[cluster_id]
-            logging.info(cluster_id)
             predicted_val = current_model.predict( np.asarray(model_inputs).reshape(1,-1) )[0]
-            logging.info(predicted_val)
             prediction = {
                 "zoneId": zone_id,
                 "availabilityPrediction": round(clamp(predicted_val), 4)
