@@ -22,6 +22,7 @@ def get_all(cluster_ids):
     session = boto3.Session(**credentials)
 
     s3 = session.resource('s3')
+    # TODO - make this configurable from the environment or at least convention based
     bucket = s3.Bucket('dev-parking-prediction')
 
     models = {}
@@ -29,6 +30,7 @@ def get_all(cluster_ids):
 
     for cluster_id in cluster_ids:
         if not np.isnan(cluster_id):
+            # TODO - make this load each into a ByteIO so we don't leave files strewn all over the FS
             file_path = path.join(base_model_file_path, 'mlp_shortnorth_downtown_cluster' + str(int(cluster_id)))
 
             object_key = 'models/latest/mlp_shortnorth_downtown_cluster' + str(int(cluster_id))

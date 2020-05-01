@@ -2,10 +2,6 @@ import pytest
 import json
 from freezegun import freeze_time
 
-import boto3
-from moto import mock_s3
-from os import path, walk
-
 
 def test_no_zone_id_param_returns_all_zones(client):
     with freeze_time("2020-01-14 14:00:00"):
