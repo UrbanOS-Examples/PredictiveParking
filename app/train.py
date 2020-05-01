@@ -4,7 +4,12 @@ from datetime import datetime, date
 from math import sqrt
 import pyodbc
 import pickle
-
+import os
+import configparser
+import logging
+logging.basicConfig(level=logging.NOTSET)
+import getpass
+import sys
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
@@ -31,13 +36,19 @@ def sql_read(server_name, db_name, sql_query, uid = None, pwd = None):
     return df
 
 if __name__ == "__main__":
-    myDir = "D:\\OneDrive - The Ohio State University\\smart columbus\\PredictiveParking\\"
-    zone_cluster = pd.read_csv(myDir + "meter_config\\zone_cluster16_short_north_downtown_15_19.csv")
+    configParser = configparser.RawConfigParser()   
+    configParser.read(r'train.config')
+    zone_cluster = pd.read_csv("./meter_config/zone_cluster16_short_north_downtown_15_19.csv")
 
-    server_name = "parking-prediction-data-science.cubukorqhmfm.us-east-2.rds.amazonaws.com,1433"
-    db_name = "scos_parking"
-    uid = input('Enter sql server database username:')
-    pwd = input('Enter sql server database password:')
+    environment = input('Enter environment (dev/staging/prod):')
+    server_name = configParser.get(environment, 'mssql_url')
+    db_name = configParser.get(environment, 'mssql_db_name')
+    uid = configParser.get(environment, 'mssql_db_user')
+    pwd = os.getenv('MSSQL_PWD')
+    
+    if pwd == None:
+        pwd = getpass.getpass()
+    
     sql_query = "SELECT [zone_name] \
                 ,[semihour] \
                 ,[occu_min] \
@@ -50,7 +61,7 @@ if __name__ == "__main__":
                 ,[city_holiday] \
                 ,[shortnorth_event] \
                 ,[no_data] \
-                FROM [scos_parking].[dbo].[parking_zone_occupancy_aggr] \
+                FROM [dbo].[parking_zone_occupancy_aggr] \
                 where year(semihour) = 2019\
                 order by zone_name, semihour"
 
@@ -60,7 +71,9 @@ if __name__ == "__main__":
         else:
             occu_df = sql_read(server_name, db_name, sql_query)
     except:
-        print("Read data not successfully.")
+        print("Unexpected error:", sys.exc_info()[0])
+        raise
+        # print("Read data not successfully.")
     # print(occu_df.info())
     if occu_df.shape[0] > 0:
         print("Read data successfully.")
@@ -126,6 +139,6 @@ if __name__ == "__main__":
         print("average score is", sum(scores)/len(scores))
         
         # save the model to disk
-        filename = myDir + '\\models\\mlp_shortnorth_downtown_50_50_19_' + str(date.today()) +'_cluster' + str(int(cluster_id))
+        filename = 'models/mlp_shortnorth_downtown_50_50_19_' + str(date.today()) +'_cluster' + str(int(cluster_id))
         pickle.dump(mlp, open(filename, 'wb'))
         
