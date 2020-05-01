@@ -3,19 +3,25 @@ import numpy as np
 import pickle
 from cachetools import cached, TTLCache
 
-from io import BytesIO
 import boto3
 from tempfile import mkdtemp
+from app import auth_provider
 
-ttl_cache = TTLCache(maxsize=128, ttl=300)
+ttl_hours = 12
+ttl_seconds = ttl_hours * 60 * 60
+ttl_cache = TTLCache(maxsize=128, ttl=ttl_seconds)
+
+
 def list_key(*args, **kwargs):
     return tuple(*args)
 
 
 @cached(cache=ttl_cache, key=list_key)
 def get_all(cluster_ids):
-    print("In get_all")
-    s3 = boto3.resource('s3')
+    credentials = auth_provider.get_credentials()
+    session = boto3.Session(**credentials)
+
+    s3 = session.resource('s3')
     bucket = s3.Bucket('dev-parking-prediction')
 
     models = {}

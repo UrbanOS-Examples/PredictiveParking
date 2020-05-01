@@ -4,9 +4,9 @@ import pandas as pd
 import numpy as np
 import pickle
 import logging
-logging.basicConfig(level=logging.NOTSET)
+logging.basicConfig(level=logging.WARNING)
 
-from app import model_thingy
+from app import model_provider
 
 def predict(input_datetime, zone_ids='All'):
     if not is_valid_input_datetime(input_datetime): return []
@@ -20,7 +20,7 @@ def predict(input_datetime, zone_ids='All'):
 
     cluster_ids = zone_cluster.clusterID.unique().tolist()
 
-    models = model_thingy.get_all(cluster_ids)
+    models = model_provider.get_all(cluster_ids)
 
     prediction_output = []
 

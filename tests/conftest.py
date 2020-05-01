@@ -1,36 +1,18 @@
 import pytest
 
 from app import app
-from tests import fake_vault
-import hvac
 
 from os import path, walk
 from moto import mock_s3
 import boto3
 import pandas as pd
 
-import logging
-
-logging.getLogger('boto3').setLevel(logging.WARNING)
-logging.getLogger('botocore').setLevel(logging.WARNING)
-logging.getLogger('s3transfer').setLevel(logging.WARNING)
 
 @pytest.fixture
 def client(fake_model_files_in_s3):
     print('in fake app creator')
     with app.test_client() as client:
         yield client
-
-
-@pytest.fixture
-def credentials_from_vault(monkeypatch):
-    access_key_id_from_vault = 'my_first_access_key_id'
-    secret_access_key_from_vault = 'my_first_secret_key_value'
-
-    monkeypatch.setattr(hvac, 'Client', fake_vault.successful_hvac_client(access_key_id_from_vault, secret_access_key_from_vault))
-    monkeypatch.setattr('builtins.open', fake_vault.successful_token_file)
-
-    return {'aws_access_key_id': access_key_id_from_vault, 'aws_secret_access_key': secret_access_key_from_vault}
 
 
 @pytest.fixture(scope='module', autouse=True)

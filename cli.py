@@ -1,7 +1,7 @@
 ### this is to test the model
 from datetime import datetime
 import sys
-import predictor
+from app import predictor
 
 if __name__ == "__main__":
     if len(sys.argv) == 6:
