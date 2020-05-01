@@ -9,6 +9,7 @@ RUN apt-get -y install nginx \
     && apt-get -y install python3-dev \
     && apt-get -y install libpcre3 libpcre3-dev \
     && apt-get -y install build-essential \
+    && apt-get -y install unixodbc-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install -r app/requirements.txt
