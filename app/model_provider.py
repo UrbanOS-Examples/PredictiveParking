@@ -7,6 +7,8 @@ import boto3
 from tempfile import mkdtemp
 from app import auth_provider
 
+from io import BytesIO
+
 ttl_hours = 12
 ttl_seconds = ttl_hours * 60 * 60
 ttl_cache = TTLCache(maxsize=128, ttl=ttl_seconds)
@@ -31,11 +33,16 @@ def get_all(cluster_ids):
     for cluster_id in cluster_ids:
         if not np.isnan(cluster_id):
             # TODO - make this load each into a ByteIO so we don't leave files strewn all over the FS
-            file_path = path.join(base_model_file_path, 'mlp_shortnorth_downtown_cluster' + str(int(cluster_id)))
+            # file_path = path.join(base_model_file_path, 'mlp_shortnorth_downtown_cluster' + str(int(cluster_id)))
 
             object_key = 'models/latest/mlp_shortnorth_downtown_cluster' + str(int(cluster_id))
-            bucket.download_file(object_key, file_path)
-            loaded_model = pickle.load(open(file_path, 'rb'))
+            # bucket.download_file(object_key, file_path)
+            print('downloading', object_key)
+            with BytesIO() as bytesio:
+                bucket.download_fileobj(object_key, bytesio)
+                bytesio.seek(0)
+                loaded_model = pickle.load(bytesio)
+            # loaded_model = pickle.load(open(file_path, 'rb'))
 
             models[str(int(cluster_id))] = loaded_model
 
