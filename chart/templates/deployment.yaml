@@ -6,7 +6,6 @@ metadata:
   labels:
     app: {{ .Chart.Name }}
 spec:
-  serviceAccountName: parking-prediction-api
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
@@ -16,6 +15,7 @@ spec:
       labels:
         app: {{ .Chart.Name }}
     spec:
+      serviceAccountName: parking-prediction-api
       containers:
       - name: {{ .Chart.Name }}
         image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
