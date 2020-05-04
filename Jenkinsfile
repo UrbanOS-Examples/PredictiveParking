@@ -29,14 +29,15 @@ node ('infrastructure') {
                 image.push('latest')
             }
 
-            def extraHelmArgs =  "--recreate-pods --set image.tag='latest'"
+            def extraHelmArgs =  "--recreate-pods --set image.tag='latest' --values dev.yaml"
             deployTo(environment: 'dev', extraVars: [ 'extra_helm_args': extraHelmArgs ])
         }
 
         doStageIfPromoted('Deploy to Staging')  {
             def environment = 'staging'
 
-            deployTo(environment: environment)
+            def extraHelmArgs =  "--values staging.yaml"
+            deployTo(environment: environment, extraVars: [ 'extra_helm_args': extraHelmArgs ])
 
             scos.applyAndPushGitHubTag(environment)
 
@@ -49,7 +50,7 @@ node ('infrastructure') {
             def releaseTag = env.BRANCH_NAME
             def promotionTag = 'prod'
 
-            def extraHelmArgs =  "--set image.tag='${releaseTag}'"
+            def extraHelmArgs =  "--set image.tag='${releaseTag}' --values prod.yaml"
             deployTo(environment: 'prod', extraVars: [ 'extra_helm_args': extraHelmArgs ])
 
             scos.applyAndPushGitHubTag(promotionTag)
