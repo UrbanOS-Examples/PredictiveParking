@@ -14,8 +14,7 @@ def predict(input_datetime, zone_ids='All'):
     base_dir = path.dirname(path.abspath(__file__))
 
     model_inputs = transform_datetime(input_datetime)
-    # read zone information
-    # zone_centroid_cluster = pd.read_csv(path.join(base_dir, "meter_config/zone_centroid_cluster_short_north.csv"))
+
     zone_cluster = pd.read_csv(path.join(base_dir, "meter_config/zone_cluster16_short_north_downtown_15_19.csv"))
 
     cluster_ids = zone_cluster.clusterID.unique().tolist()
