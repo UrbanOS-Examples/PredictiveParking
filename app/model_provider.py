@@ -29,16 +29,15 @@ def get_all(cluster_ids):
     bucket = s3.Bucket(environment + '-parking-prediction')
 
     models = {}
-    base_model_file_path = mkdtemp()
 
     for cluster_id in cluster_ids:
-        if not np.isnan(cluster_id):
-            object_key = 'models/latest/mlp_shortnorth_downtown_cluster' + str(int(cluster_id))
-            with BytesIO() as bytesio:
-                bucket.download_fileobj(object_key, bytesio)
-                bytesio.seek(0)
-                loaded_model = pickle.load(bytesio)
+        cluster_id_string = str(int(cluster_id))
+        object_key = 'models/latest/mlp_shortnorth_downtown_cluster' + cluster_id_string
+        with BytesIO() as bytesio:
+            bucket.download_fileobj(object_key, bytesio)
+            bytesio.seek(0)
+            loaded_model = pickle.load(bytesio)
 
-            models[str(int(cluster_id))] = loaded_model
+        models[cluster_id_string] = loaded_model
 
     return models
