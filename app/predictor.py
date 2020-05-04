@@ -4,7 +4,9 @@ import pandas as pd
 import numpy as np
 import pickle
 import logging
-logging.basicConfig(level=logging.NOTSET)
+logging.basicConfig(level=logging.WARNING)
+
+from app import model_provider
 
 def predict(input_datetime, zone_ids='All'):
     if not is_valid_input_datetime(input_datetime): return []
@@ -12,19 +14,12 @@ def predict(input_datetime, zone_ids='All'):
     base_dir = path.dirname(path.abspath(__file__))
 
     model_inputs = transform_datetime(input_datetime)
-    # read zone information
-    # zone_centroid_cluster = pd.read_csv(path.join(base_dir, "meter_config/zone_centroid_cluster_short_north.csv"))
+
     zone_cluster = pd.read_csv(path.join(base_dir, "meter_config/zone_cluster16_short_north_downtown_15_19.csv"))
 
-    # load the model from disk
-    model_path = path.join(base_dir, "models")
-    models = {}
-    for cluster_id in zone_cluster.clusterID.unique():
-        if not np.isnan(cluster_id):
-            # model_cluster_file = path.join(model_path, "model_cluster" + str(int(cluster_id)))
-            model_cluster_file = path.join(model_path, "mlp_shortnorth_downtown_50_50_19_2020-04-30_cluster" + str(int(cluster_id)))
-            loaded_model = pickle.load(open(model_cluster_file, 'rb'))
-            models[str(int(cluster_id))] = loaded_model
+    cluster_ids = zone_cluster.clusterID.unique().tolist()
+
+    models = model_provider.get_all(cluster_ids)
 
     prediction_output = []
 

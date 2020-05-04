@@ -15,9 +15,13 @@ spec:
       labels:
         app: {{ .Chart.Name }}
     spec:
+      serviceAccountName: parking-prediction-api
       containers:
       - name: {{ .Chart.Name }}
         image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: SCOS_ENV
+          value: {{ .Values.scosEnv }}
         resources:
 {{ toYaml .Values.resources | indent 10 }}

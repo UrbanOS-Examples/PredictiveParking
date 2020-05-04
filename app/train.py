@@ -40,7 +40,7 @@ if __name__ == "__main__":
     configParser.read(r'train.config')
     zone_cluster = pd.read_csv("./meter_config/zone_cluster16_short_north_downtown_15_19.csv")
 
-    environment = input('Enter environment (dev/staging/prod):')
+    environment = input('Enter environment (dev/prod):')
     server_name = configParser.get(environment, 'mssql_url')
     db_name = configParser.get(environment, 'mssql_db_name')
     uid = configParser.get(environment, 'mssql_db_user')
@@ -139,6 +139,6 @@ if __name__ == "__main__":
         print("average score is", sum(scores)/len(scores))
         
         # save the model to disk
-        filename = 'models/mlp_shortnorth_downtown_50_50_19_' + str(date.today()) +'_cluster' + str(int(cluster_id))
+        filename = 'models/mlp_shortnorth_downtown_cluster' + str(int(cluster_id))
         pickle.dump(mlp, open(filename, 'wb'))
         

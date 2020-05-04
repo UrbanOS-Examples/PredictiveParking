@@ -2,12 +2,14 @@ import pytest
 import json
 from freezegun import freeze_time
 
+
 def test_no_zone_id_param_returns_all_zones(client):
     with freeze_time("2020-01-14 14:00:00"):
         response = client.get('/api/v1/predictions')
 
     assert response.status_code == 200
     assert len(json.loads(response.data)) > 0
+
 
 def test_zone_ids_restricts_zones(client):
     with freeze_time("2020-01-14 14:00:00"):
