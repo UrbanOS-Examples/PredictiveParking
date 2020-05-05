@@ -62,7 +62,7 @@ if __name__ == "__main__":
                 ,[shortnorth_event] \
                 ,[no_data] \
                 FROM [dbo].[parking_zone_occupancy_aggr] \
-                where year(semihour) = 2019\
+                where CONVERT(date, semihour) >= CONVERT(date, DATEADD(month, -18, GETUTCDATE()))\
                 order by zone_name, semihour"
 
     try:
