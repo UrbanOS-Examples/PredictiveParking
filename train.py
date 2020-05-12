@@ -22,6 +22,7 @@ from sklearn.neural_network import MLPRegressor
 
 from app import model_provider
 
+
 def sql_read(server_name, db_name, sql_query, uid = None, pwd = None):
     # connect to sql server, read from a table and query, return a pandas dataframe
     if uid is not None and pwd is not None:
@@ -37,6 +38,7 @@ def sql_read(server_name, db_name, sql_query, uid = None, pwd = None):
         df = pd.read_sql_query(sql_query, conn)
     
     return df
+
 
 if __name__ == "__main__":
     base_dir = path.dirname(path.abspath(__file__))

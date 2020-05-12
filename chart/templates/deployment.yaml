@@ -24,5 +24,9 @@ spec:
         env:
         - name: SCOS_ENV
           value: {{ .Values.scosEnv }}
+        - name: VAULT_ROLE
+          value: parking-prediction-api-role
+        - name: VAULT_CREDENTIALS_KEY
+          value: parking_prediction_api
         resources:
 {{ toYaml .Values.resources | indent 10 }}

@@ -32,5 +32,9 @@ spec:
               value: {{ .Values.mssql.userName }}
             - name: SQL_SERVER_PASSWORD
               value: {{ .Values.mssql.password }}
+            - name: VAULT_ROLE
+              value: parking-prediction-train-role
+            - name: VAULT_CREDENTIALS_KEY
+              value: parking_prediction_train
             resources:
 {{ toYaml .Values.resources | indent 10 }}
