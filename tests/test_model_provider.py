@@ -37,28 +37,28 @@ def test_train_writes_models_to_s3(setup_all):
 
 
 def test_read_and_update_model(setup_all):
-    conn, bucket = setup_all
-    
+    _, bucket = setup_all
+
     models = {
         '1': 'model 1',
         '2': 'model 2'
     }
 
-    # call it
     with freeze_time("2020-01-14 14:00:00"):
         model_provider.put_all(models)
 
     assert get_latest_model() == 'model 1'
 
     models = {
-        '1': 'updated model 1',
-        '2': 'model 2'
+        '1': 'updated model 1'
     }
 
     with freeze_time("2020-01-15 14:00:00"):
         model_provider.put_all(models)
 
     assert get_latest_model() == 'updated model 1'
+    assert 1 == len(list(bucket.objects.filter(Prefix="models/latest/")))
+
 
 def get_latest_model():
     conn = boto3.resource('s3')

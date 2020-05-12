@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import pandas as pd
 import numpy as np
 from datetime import datetime, date
@@ -7,10 +8,11 @@ import pickle
 import os
 from os import path
 import configparser
-import logging
-logging.basicConfig(level=logging.NOTSET)
 import getpass
 import sys
+import argparse
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
@@ -23,8 +25,9 @@ from sklearn.neural_network import MLPRegressor
 from app import model_provider
 
 
+
 def sql_read(server_name, db_name, sql_query, uid = None, pwd = None):
-    # connect to sql server, read from a table and query, return a pandas dataframe
+    logging.info(f"Reading data from {server_name}")
     if uid is not None and pwd is not None:
         conn_specs = 'Driver={ODBC Driver 17 for SQL Server};Server=' \
                 + server_name + ';Database=' + db_name \
@@ -78,12 +81,14 @@ if __name__ == "__main__":
         else:
             occu_df = sql_read(server_name, db_name, sql_query)
     except:
-        print("Unexpected error:", sys.exc_info()[0])
+        logging.error(f"Unexpected error: {sys.exc_info()[0]}")
         raise
-        # print("Read data not successfully.")
-    # print(occu_df.info())
+
     if occu_df.shape[0] > 0:
-        print("Read data successfully.")
+        logging.info("Read data successfully.")
+
+    logging.info(f"Records in data frame: {occu_df.shape[0]}")
+    logging.info(f"Zones in data frame: {len(occu_df['zone_name'].unique())}")
    
     occu_df.loc[occu_df["no_data"] == 1, 'occu_min_rate'] = np.nan
     occu_df.loc[occu_df["no_data"] == 1, 'occu_cnt_rate'] = np.nan
@@ -92,19 +97,27 @@ if __name__ == "__main__":
     occu_df.loc[(occu_df["no_trxn_one_week_flg"] == 1) & (occu_df["occu_min_rate"].notna()), 'occu_min_rate'] =  np.nan
     occu_df.loc[(occu_df["no_trxn_one_week_flg"] == 1) & (occu_df["occu_cnt_rate"].notna()), 'occu_cnt_rate'] =  np.nan
     occu_df = occu_df.dropna(subset=['occu_cnt_rate'])
-
+    
     models = {}
 
     for cluster_id in zone_cluster.clusterID.unique():
-        print('cluster ID', cluster_id)
+        print("\n")
+        logging.info(f"Processing cluster ID {cluster_id}")
+
         zones_in_cluster = zone_cluster[zone_cluster["clusterID"] == cluster_id].zoneID.astype('str').values
+        logging.debug(f"Zones in cluster: {zones_in_cluster}")
+
         occu_cluster = occu_df[occu_df['zone_name'].isin(zones_in_cluster)].reset_index(drop=True)
+        
+        if occu_cluster.empty:
+            continue
+        
         occu_cluster['semihour'] = pd.to_datetime(occu_cluster['semihour'])
         occu_cluster = occu_cluster.set_index("semihour")
         occu_cluster['available_rate'] = 1 - occu_cluster['occu_cnt_rate']
         occu_cluster = occu_cluster.between_time('08:00', '22:00', include_start = True, include_end = False) 
         occu_cluster = occu_cluster[(occu_cluster.index.dayofweek != 6)] # exclude sunday
-        
+
         occu_cluster['hour'] = list(zip(occu_cluster.index.hour,occu_cluster.index.minute))
         occu_cluster['hour'] = occu_cluster.hour.astype('category')
         occu_cluster['dayofweek'] = occu_cluster.index.dayofweek.astype('category')
@@ -115,20 +128,19 @@ if __name__ == "__main__":
         y = pd.DataFrame(occu_cluster['available_rate'])
         # one-hot coding
         for col in X.select_dtypes(include='category').columns:
-            # print(col)
             # drop_first = True removes multi-collinearity
             add_var = pd.get_dummies(X[col], prefix=col, drop_first=True)
             # Add all the columns to the model data
             X = pd.concat([X, add_var],1)
             # Drop the original column that was expanded
             X.drop(columns=[col], inplace=True)
-        print('total shape, ', X.shape)
+        logging.info(f"Total shape {X.shape}")
         
         # no meter count as feature
         # from sklearn.model_selection import cross_val_score
         # from sklearn.preprocessing import MinMaxScaler
         X_train, X_test, y_train, y_test = train_test_split(X.values, y.values.ravel(), test_size=0.3, random_state=42)
-        print('train size,', X_train.shape, 'test size', X_test.shape)
+        logging.info(f"Train size {X_train.shape}, Test size {X_test.shape}")
         # {'identity', 'logistic', 'tanh', 'relu'}
         mlp = MLPRegressor(hidden_layer_sizes=(50, 50), activation='relu', solver='adam', alpha=0.0001, 
                         batch_size='auto', learning_rate='constant', learning_rate_init=0.001, power_t=0.5,
@@ -138,13 +150,13 @@ if __name__ == "__main__":
 
         mlp.fit(X_train, y_train)
         y_pred = mlp.predict(X_test)
-        print('rmse in train', sqrt(mean_squared_error(y_train,mlp.predict(X_train))))
-        print('rmse in test', sqrt(mean_squared_error(y_test, y_pred)))
-        print('mae in test', mean_absolute_error(y_test, y_pred))
+        logging.info(f"Root Mean Square Error in train {sqrt(mean_squared_error(y_train,mlp.predict(X_train)))}")
+        logging.info(f"Root Mean Square Error in test {sqrt(mean_squared_error(y_test, y_pred))}")
+        logging.info(f"Mean Absolute Error in test {mean_absolute_error(y_test, y_pred)}")
 
         scores = cross_val_score(mlp, X.values, y.values.ravel(), cv=KFold(n_splits=5, shuffle=True,random_state=42))
-        print("each time scores are", scores)
-        print("average score is", sum(scores)/len(scores))
+        logging.info(f"Each time scores are {scores}")
+        logging.info(f"Average score is {sum(scores)/len(scores)}")
         
         models[str(int(cluster_id))] = mlp
         
