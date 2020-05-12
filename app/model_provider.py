@@ -16,11 +16,12 @@ ttl_cache = TTLCache(maxsize=128, ttl=ttl_seconds)
 
 
 def list_key(*args, **kwargs):
-    return tuple(*args)
+    # Add the two args together into a single array
+    return tuple(args[0] + [args[1]])
 
 
 @cached(cache=ttl_cache, key=list_key)
-def get_all(cluster_ids):
+def get_all(cluster_ids, model):
     credentials = auth_provider.get_credentials()
     session = boto3.Session(**credentials)
 

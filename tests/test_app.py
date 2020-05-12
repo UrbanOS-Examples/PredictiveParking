@@ -45,3 +45,10 @@ def test_time_out_of_hours_returns_no_predictions(client):
 
     assert response.status_code == 200
     assert len(json.loads(response.data)) == 0
+
+def test_no_zone_id_param_returns_all_zones_v0(client):
+    with freeze_time("2020-01-14 14:00:00"):
+        response = client.get('/api/v0/predictions')
+
+    assert response.status_code == 200
+    assert len(json.loads(response.data)) > 0
