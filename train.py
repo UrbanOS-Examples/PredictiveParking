@@ -10,7 +10,6 @@ from os import path
 import configparser
 import getpass
 import sys
-import argparse
 import logging
 logging.basicConfig(level=logging.INFO)
 

@@ -27,11 +27,9 @@ def test_train_writes_models_to_s3(setup_all):
     with freeze_time("2020-01-14 14:00:00"):
         model_provider.put_all(models)
     
-    # assert that stuff is in s3 in a dated folder
     latest_content = list(bucket.objects.filter(Prefix="models/latest/"))
     dated_content = list(bucket.objects.filter(Prefix="models/2020-01-14/"))
 
-    # assert that stuff is in s3 in a latest folder
     assert len(latest_content) == 2
     assert len(dated_content) == 2
 
