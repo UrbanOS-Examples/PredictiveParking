@@ -12,7 +12,7 @@ import getpass
 import sys
 import argparse
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
@@ -110,6 +110,7 @@ if __name__ == "__main__":
         occu_cluster = occu_df[occu_df['zone_name'].isin(zones_in_cluster)].reset_index(drop=True)
         
         if occu_cluster.empty:
+            logging.info(f"No data available for {cluster_id}, not creating model")
             continue
         
         occu_cluster['semihour'] = pd.to_datetime(occu_cluster['semihour'])
