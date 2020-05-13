@@ -39,13 +39,16 @@ def predict(input_datetime, zone_ids='All', model='latest'):
 
     prediction_output = []
 
-    for idx, row in zone_cluster.iterrows():
+    for _idx, row in zone_cluster.iterrows():
         zone_id = str(row['zoneID'])
         if zone_ids != 'All' and zone_id not in zone_ids: continue
 
         cluster_id = row['clusterID']
         if not np.isnan(cluster_id):
             cluster_id = str(int(cluster_id))
+            if cluster_id not in models:
+                continue
+
             current_model = models[cluster_id]
             predicted_val = current_model.predict( np.asarray(model_inputs).reshape(1,-1) )[0]
             prediction = {

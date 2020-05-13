@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 ### this is to test the model
 from datetime import datetime
 import sys

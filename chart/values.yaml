@@ -9,6 +9,9 @@ service:
   type: NodePort
   port: 80
 
+mssql:
+  database: parking_prediction
+
 ingress:
   enabled: true
   annotations:

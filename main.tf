@@ -19,6 +19,10 @@ data "terraform_remote_state" "env_remote_state" {
   }
 }
 
+data "aws_secretsmanager_secret_version" "data_science_db_password" {
+  secret_id = "${data.terraform_remote_state.env_remote_state.data_science_db_secret_id}"
+}
+
 resource "local_file" "kubeconfig" {
   filename = "${path.module}/outputs/kubeconfig"
   content = "${data.terraform_remote_state.env_remote_state.eks_cluster_kubeconfig}"
@@ -40,6 +44,10 @@ ingress:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
   rootDnsZone: "${data.terraform_remote_state.env_remote_state.root_dns_zone_name}"
   port: 80
+mssql:
+  serverUrl: "${data.terraform_remote_state.env_remote_state.data_science_db_server}"
+  userName: "${data.terraform_remote_state.env_remote_state.data_science_db_username}"
+  password: "${data.aws_secretsmanager_secret_version.data_science_db_password.secret_string}"
 EOF
 }
 
@@ -53,6 +61,7 @@ export KUBECONFIG=${local_file.kubeconfig.filename}
 export AWS_DEFAULT_REGION=us-east-2
 helm upgrade --install predictive-parking ./chart --namespace=predictive-parking \
     --values ${local_file.helm_vars.filename} \
+    --values chart/${terraform.workspace}.yaml \
     ${var.extra_helm_args}
 EOF
   }
