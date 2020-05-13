@@ -21,7 +21,8 @@ def predict_with(models, input_datetime, zone_ids='All'):
         }
         for model in models:
             zipped_prediction[f"{model}Prediction"] = predictions[model][index]["availabilityPrediction"]
-    return zipped_prediction
+            zipped_predictions.append(zipped_prediction)
+    return zipped_predictions
 
 
 def predict(input_datetime, zone_ids='All', model='latest'):
