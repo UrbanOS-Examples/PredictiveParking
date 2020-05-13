@@ -7,11 +7,12 @@ import pyodbc
 import pickle
 import os
 from os import path
+from dataclasses import dataclass
 import configparser
 import getpass
 import sys
 import logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
@@ -23,41 +24,36 @@ from sklearn.neural_network import MLPRegressor
 
 from app import model_provider
 
+DIRNAME = path.dirname(path.abspath(__file__))
 
 
-def sql_read(server_name, db_name, sql_query, uid = None, pwd = None):
-    logging.info(f"Reading data from {server_name}")
-    if uid is not None and pwd is not None:
-        conn_specs = 'Driver={ODBC Driver 17 for SQL Server};Server=' \
-                + server_name + ';Database=' + db_name \
-                + ';UID=' + uid + ';PWD=' + pwd \
-                + ';'
-    else:
-        conn_specs = 'Driver={SQL Server Native Client 11.0};Server=' \
-                    + server_name + ';Database=' + db_name \
-                    + ';Trusted_Connection=yes;MARS_Connection=yes;'
-    with pyodbc.connect(conn_specs) as conn:
-        df = pd.read_sql_query(sql_query, conn)
-    
-    return df
+def main():
+    database_config = _get_database_config()
+
+    occupancy_dataframe = _get_occupancy_data_from_database(database_config)
+
+    models = _train_models(occupancy_dataframe)
+        
+    model_provider.put_all(models)
 
 
-if __name__ == "__main__":
-    base_dir = path.dirname(path.abspath(__file__))
-
+def _get_database_config():
     configParser = configparser.RawConfigParser()
-    configParser.read(path.join(base_dir, 'app/train.config'))
-    zone_cluster = pd.read_csv(path.join(base_dir, "app/meter_config/zone_cluster16_short_north_downtown_15_19.csv"))
-
+    configParser.read(path.join(DIRNAME, 'app/train.config'))
+    
     environment = os.getenv('SCOS_ENV') or 'dev'
-    server_name = os.getenv('SQL_SERVER_URL') or configParser.get(environment, 'mssql_url')
-    db_name = os.getenv('SQL_SERVER_DATABASE') or configParser.get(environment, 'mssql_db_name')
-    uid = os.getenv('SQL_SERVER_USERNAME') or configParser.get(environment, 'mssql_db_user')
-    pwd = os.getenv('SQL_SERVER_PASSWORD')
+    url = os.getenv('SQL_SERVER_URL') or configParser.get(environment, 'mssql_url')
+    database = os.getenv('SQL_SERVER_DATABASE') or configParser.get(environment, 'mssql_db_name')
+    username = os.getenv('SQL_SERVER_USERNAME') or configParser.get(environment, 'mssql_db_user')
+    password = os.getenv('SQL_SERVER_PASSWORD')
     
-    if pwd == None:
-        pwd = getpass.getpass()
-    
+    if password == None:
+        password = getpass.getpass()
+
+    return SqlServerConfig(url, database, username, password)
+
+
+def _get_occupancy_data_from_database(database_config):
     sql_query = "SELECT [zone_name] \
                 ,[semihour] \
                 ,[occu_min] \
@@ -75,57 +71,83 @@ if __name__ == "__main__":
                 order by zone_name, semihour"
 
     try:
-        if len(uid) > 0 and len(pwd) > 0:
-            occu_df = sql_read(server_name, db_name, sql_query, uid, pwd)
-        else:
-            occu_df = sql_read(server_name, db_name, sql_query)
-    except:
-        logging.error(f"Unexpected error: {sys.exc_info()[0]}")
-        raise
+        occupancy_dataframe = _sql_read(database_config, sql_query)
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+        raise e
 
-    if occu_df.shape[0] > 0:
-        logging.info("Read data successfully.")
+    if not occupancy_dataframe.empty:
+        logging.info("Read data from DB into dataframe successfully.")
+        logging.info(f"Total (row, col) counts for dataframe: {occupancy_dataframe.shape}")
+        logging.info(f"Zones in dataframe: {len(occupancy_dataframe['zone_name'].unique())}")
+    else:
+        logging.error(f"No data read from DB: {occupancy_dataframe}")
+        raise Exception("No data read from DB")
 
-    logging.info(f"Records in data frame: {occu_df.shape[0]}")
-    logging.info(f"Zones in data frame: {len(occu_df['zone_name'].unique())}")
+    return occupancy_dataframe
+
+
+def _sql_read(database_config, sql_query):
+    logging.info(f"Reading data from DB {database_config.url}")
+
+    if database_config.username is not None and database_config.password is not None:
+        conn_specs = ';'.join([
+            'Driver={ODBC Driver 17 for SQL Server}',
+            'Server=' + database_config.url, 
+            'Database=' + database_config.database,
+            'UID=' + database_config.username,
+            'PWD=' + database_config.password
+        ])
+    else:
+        conn_specs = ';'.join([
+            'Driver={SQL Server Native Client 11.0}',
+            'Server=' + database_config.url,
+            'Database=' + database_config.database,
+            'Trusted_Connection=yes',
+            'MARS_Connection=yes'
+        ])
+
+    logging.debug(f"Performing DB read with spec of {conn_specs}")
+
+    with pyodbc.connect(conn_specs) as conn:
+        dataframe = pd.read_sql_query(sql_query, conn)
+    
+    return dataframe
+
+
+def _train_models(occupancy_dataframe):
+    zone_cluster = pd.read_csv(path.join(DIRNAME, "app/meter_config/zone_cluster16_short_north_downtown_15_19.csv"))
    
-    occu_df.loc[occu_df["no_data"] == 1, 'occu_min_rate'] = np.nan
-    occu_df.loc[occu_df["no_data"] == 1, 'occu_cnt_rate'] = np.nan
-    # how many of them are potential missing records (no transaction for one week for the zone), zone got bagged
-    # print(occu_df.loc[(occu_df["no_trxn_one_week_flg"] == 1) & (occu_df["occu_min_rate"].notna())].shape)
-    occu_df.loc[(occu_df["no_trxn_one_week_flg"] == 1) & (occu_df["occu_min_rate"].notna()), 'occu_min_rate'] =  np.nan
-    occu_df.loc[(occu_df["no_trxn_one_week_flg"] == 1) & (occu_df["occu_cnt_rate"].notna()), 'occu_cnt_rate'] =  np.nan
-    occu_df = occu_df.dropna(subset=['occu_cnt_rate'])
+    cleaned_occupancy_dataframe = _remove_unoccupied_timeslots(occupancy_dataframe)
     
     models = {}
 
     for cluster_id in zone_cluster.clusterID.unique():
-        print("\n")
         logging.info(f"Processing cluster ID {cluster_id}")
 
         zones_in_cluster = zone_cluster[zone_cluster["clusterID"] == cluster_id].zoneID.astype('str').values
         logging.debug(f"Zones in cluster: {zones_in_cluster}")
 
-        occu_cluster = occu_df[occu_df['zone_name'].isin(zones_in_cluster)].reset_index(drop=True)
+        occupancy_for_cluster = cleaned_occupancy_dataframe[cleaned_occupancy_dataframe['zone_name'].isin(zones_in_cluster)].reset_index(drop=True)
         
-        if occu_cluster.empty:
+        if occupancy_for_cluster.empty:
             logging.info(f"No data available for {cluster_id}, not creating model")
             continue
         
-        occu_cluster['semihour'] = pd.to_datetime(occu_cluster['semihour'])
-        occu_cluster = occu_cluster.set_index("semihour")
-        occu_cluster['available_rate'] = 1 - occu_cluster['occu_cnt_rate']
-        occu_cluster = occu_cluster.between_time('08:00', '22:00', include_start = True, include_end = False) 
-        occu_cluster = occu_cluster[(occu_cluster.index.dayofweek != 6)] # exclude sunday
+        occupancy_for_cluster['semihour'] = pd.to_datetime(occupancy_for_cluster['semihour'])
+        occupancy_for_cluster = occupancy_for_cluster.set_index("semihour")
+        occupancy_for_cluster['available_rate'] = 1 - occupancy_for_cluster['occu_cnt_rate']
+        occupancy_for_cluster = occupancy_for_cluster.between_time('08:00', '22:00', include_start = True, include_end = False) 
+        occupancy_for_cluster = occupancy_for_cluster[(occupancy_for_cluster.index.dayofweek != 6)] # exclude sunday
 
-        occu_cluster['hour'] = list(zip(occu_cluster.index.hour,occu_cluster.index.minute))
-        occu_cluster['hour'] = occu_cluster.hour.astype('category')
-        occu_cluster['dayofweek'] = occu_cluster.index.dayofweek.astype('category')
-        occu_cluster['month'] = occu_cluster.index.month.astype('category')
-        occu_cluster = occu_cluster.loc[:,['total_cnt','available_rate','hour','dayofweek','month']]
-        #     X = pd.DataFrame(occu_cluster.loc[:,['total_cnt','hour', 'dayofweek','month']])
-        X = pd.DataFrame(occu_cluster.loc[:,['hour', 'dayofweek','month']])
-        y = pd.DataFrame(occu_cluster['available_rate'])
+        occupancy_for_cluster['hour'] = list(zip(occupancy_for_cluster.index.hour,occupancy_for_cluster.index.minute))
+        occupancy_for_cluster['hour'] = occupancy_for_cluster.hour.astype('category')
+        occupancy_for_cluster['dayofweek'] = occupancy_for_cluster.index.dayofweek.astype('category')
+        occupancy_for_cluster['month'] = occupancy_for_cluster.index.month.astype('category')
+        occupancy_for_cluster = occupancy_for_cluster.loc[:,['total_cnt','available_rate','hour','dayofweek','month']]
+        #     X = pd.DataFrame(occupancy_for_cluster.loc[:,['total_cnt','hour', 'dayofweek','month']])
+        X = pd.DataFrame(occupancy_for_cluster.loc[:,['hour', 'dayofweek','month']])
+        y = pd.DataFrame(occupancy_for_cluster['available_rate'])
         # one-hot coding
         for col in X.select_dtypes(include='category').columns:
             # drop_first = True removes multi-collinearity
@@ -134,13 +156,14 @@ if __name__ == "__main__":
             X = pd.concat([X, add_var],1)
             # Drop the original column that was expanded
             X.drop(columns=[col], inplace=True)
-        logging.info(f"Total shape {X.shape}")
+        logging.info(f"Total (row, col) counts: {X.shape}")
         
         # no meter count as feature
         # from sklearn.model_selection import cross_val_score
         # from sklearn.preprocessing import MinMaxScaler
         X_train, X_test, y_train, y_test = train_test_split(X.values, y.values.ravel(), test_size=0.3, random_state=42)
-        logging.info(f"Train size {X_train.shape}, Test size {X_test.shape}")
+        logging.info(f"Train (row, col) counts: {X_train.shape}")
+        logging.info(f"Test (row, col) counts: {X_test.shape}")
         # {'identity', 'logistic', 'tanh', 'relu'}
         mlp = MLPRegressor(hidden_layer_sizes=(50, 50), activation='relu', solver='adam', alpha=0.0001, 
                         batch_size='auto', learning_rate='constant', learning_rate_init=0.001, power_t=0.5,
@@ -159,5 +182,29 @@ if __name__ == "__main__":
         logging.info(f"Average score is {sum(scores)/len(scores)}")
         
         models[str(int(cluster_id))] = mlp
-        
-    model_provider.put_all(models)
+
+    logging.info(f"Successfully trained {len(models)} models")
+
+    return models
+
+
+def _remove_unoccupied_timeslots(occupancy_dataframe):
+    occupancy_dataframe.loc[occupancy_dataframe["no_data"] == 1, 'occu_min_rate'] = np.nan
+    occupancy_dataframe.loc[occupancy_dataframe["no_data"] == 1, 'occu_cnt_rate'] = np.nan
+    # how many of them are potential missing records (no transaction for one week for the zone), zone got bagged
+    # print(occupancy_dataframe.loc[(occupancy_dataframe["no_trxn_one_week_flg"] == 1) & (occupancy_dataframe["occu_min_rate"].notna())].shape)
+    occupancy_dataframe.loc[(occupancy_dataframe["no_trxn_one_week_flg"] == 1) & (occupancy_dataframe["occu_min_rate"].notna()), 'occu_min_rate'] =  np.nan
+    occupancy_dataframe.loc[(occupancy_dataframe["no_trxn_one_week_flg"] == 1) & (occupancy_dataframe["occu_cnt_rate"].notna()), 'occu_cnt_rate'] =  np.nan
+    return occupancy_dataframe.dropna(subset=['occu_cnt_rate'])
+
+
+@dataclass
+class SqlServerConfig:
+    url: str
+    database: str
+    username: str = None
+    password: str = None
+
+
+if __name__ == "__main__":
+    main()
