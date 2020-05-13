@@ -28,5 +28,7 @@ spec:
           value: parking-prediction-api-role
         - name: VAULT_CREDENTIALS_KEY
           value: parking_prediction_api
+        - name: COMPARED_MODELS
+          value: {{ .Values.comparedModels }}
         resources:
 {{ toYaml .Values.resources | indent 10 }}

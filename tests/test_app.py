@@ -51,4 +51,10 @@ def test_no_zone_id_param_returns_all_zones_v0(client):
         response = client.get('/api/v0/predictions')
 
     assert response.status_code == 200
-    assert len(json.loads(response.data)) > 0
+    data = json.loads(response.data)
+    assert len(data) > 0
+    first_record = data[0]
+    assert first_record["1monthPrediction"]
+    assert first_record["3monthPrediction"]
+    assert first_record["6monthPrediction"]
+    assert first_record["zoneId"]
