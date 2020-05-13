@@ -14,7 +14,7 @@ TTL_HOURS = 12
 TTL_SECONDS = TTL_HOURS * 60 * 60
 
 VAULT_ROLE = environ.get('VAULT_ROLE', '')
-VAULT_CREDENTIALS_KEY = environ.get('VAULT_CREDENTIAL_KEY', '')
+VAULT_CREDENTIALS_KEY = environ.get('VAULT_CREDENTIALS_KEY', '')
 MODEL_FILE_PREFIX = 'mlp_shortnorth_downtown_cluster'
 MODEL_LATEST_PATH = 'models/latest/'
 

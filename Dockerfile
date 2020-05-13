@@ -5,7 +5,8 @@ RUN apt-get clean \
     && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
     && apt-get -y update
 
-RUN apt-get -y install python3-dev \
+RUN apt-get -y install nginx \
+    && apt-get -y install python3-dev \
     && apt-get -y install libpcre3 libpcre3-dev \
     && apt-get -y install build-essential \
     && apt-get -y install unixodbc-dev \
