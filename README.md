@@ -2,13 +2,17 @@
 This is a project to predict parking meter availability for ParkMobile.
 - Environment: Python3
 - Dependencies/libaries: scikit-learn 0.22.1, numpy 1.18.1, pandas 0.23.4, pyodbc 4.0.28
+```bash
+pip3 install pipenv
+pipenv install --dev
+```
 - How to run a prediction:
 
-	$ python3 app/cli.py
+	$ pipenv ./cli.py
 
 	OR
 
-	$ python3 app/cli.py 2020 1 17 9 52
+	$ pipenv ./cli.py 2020 1 17 9 52
 
 - In each folder,<br/>
 
@@ -16,13 +20,19 @@ This is a project to predict parking meter availability for ParkMobile.
 	/models	 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; current model files <br/>
 	/output	 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; the output of test.py results <br/>
 
-# Running the application local
+# Local development
+## Install dependencies
 ```bash
-pip3 install -r app/requirements.txt
-flask run
+pip3 install pipenv
+pipenv install --dev
 ```
 
-# Running tests
+## Running the application local
 ```bash
-pytest
+pipenv run flask run
+```
+
+## Running tests
+```bash
+pipenv run pytest
 ```

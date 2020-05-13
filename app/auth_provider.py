@@ -4,13 +4,10 @@ from cachetools import cached, LRUCache
 
 DEFAULT_VAULT_URL = 'http://vault.vault:8200'
 DEFAULT_TOKEN_FILE_PATH = '/var/run/secrets/kubernetes.io/serviceaccount/token'
-DEFAULT_VAULT_ROLE = 'parking-prediction-api-role'
-DEFAULT_VAULT_CREDENTIALS_KEY = 'parking_prediction_api'
-lru_cache = LRUCache(maxsize=128)
 
 
-@cached(cache=lru_cache)
-def get_credentials(vault_url=DEFAULT_VAULT_URL, vault_role=DEFAULT_VAULT_ROLE, vault_credentials_key=DEFAULT_VAULT_CREDENTIALS_KEY, token_file_path=DEFAULT_TOKEN_FILE_PATH):
+@cached(cache=LRUCache(maxsize=128))
+def get_credentials(vault_role, vault_credentials_key, vault_url=DEFAULT_VAULT_URL, token_file_path=DEFAULT_TOKEN_FILE_PATH):
   if path.isfile(token_file_path):
     client = hvac.Client(vault_url)
     f = open(token_file_path)

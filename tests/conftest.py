@@ -10,7 +10,6 @@ import pandas as pd
 
 @pytest.fixture
 def client(fake_model_files_in_s3):
-    print('in fake app creator')
     with app.test_client() as client:
         yield client
 
