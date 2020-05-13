@@ -12,7 +12,7 @@ import configparser
 import getpass
 import sys
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
