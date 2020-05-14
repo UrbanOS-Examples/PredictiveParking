@@ -16,12 +16,16 @@ def predict_with(models, input_datetime, zone_ids='All'):
 
     zipped_predictions = []
     for index in range(len(predictions[lead_model])):
+        zone_id = predictions[lead_model][index]["zoneId"]
         zipped_prediction = {
-            "zoneId": predictions[lead_model][index]["zoneId"]
+            "zoneId": zone_id
         }
+
         for model in models:
+            assert zone_id == predictions[model][index]["zoneId"]
             zipped_prediction[f"{model}Prediction"] = predictions[model][index]["availabilityPrediction"]
-            zipped_predictions.append(zipped_prediction)
+
+        zipped_predictions.append(zipped_prediction)
     return zipped_predictions
 
 

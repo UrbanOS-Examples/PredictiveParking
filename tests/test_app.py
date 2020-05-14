@@ -46,7 +46,7 @@ def test_time_out_of_hours_returns_no_predictions(client):
     assert response.status_code == 200
     assert len(json.loads(response.data)) == 0
 
-def test_no_zone_id_param_returns_all_zones_v0(client):
+def test_no_zone_id_param_returns_all_zones_compared(client):
     with freeze_time("2020-01-14 14:00:00"):
         response = client.get('/api/v0/predictions')
 
@@ -58,3 +58,13 @@ def test_no_zone_id_param_returns_all_zones_v0(client):
     assert first_record["3monthPrediction"]
     assert first_record["6monthPrediction"]
     assert first_record["zoneId"]
+
+def test_zone_ids_restricts_zones_compared(client):
+    with freeze_time("2020-01-14 14:00:00"):
+        response = client.get('/api/v0/predictions?zone_ids=31004,31002')
+
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    print(data)
+    assert len(data) > 0
+    assert len(json.loads(response.data)) == 2
