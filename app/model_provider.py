@@ -48,7 +48,7 @@ def get_all(cluster_ids):
 def put_all(models):
     bucket = _bucket_for_environment()
 
-    dated_path = 'models/' + date.today().isoformat() + '/'
+    dated_path = 'models/historical/' + date.today().strftime("%Y-%m") + '/' + date.today().isoformat() + '/'
 
     _delete_models_in_path(bucket, dated_path)
     _delete_models_in_path(bucket, MODEL_LATEST_PATH)
