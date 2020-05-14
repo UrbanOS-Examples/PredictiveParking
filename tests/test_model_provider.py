@@ -28,7 +28,7 @@ def test_train_writes_models_to_s3(setup_all):
         model_provider.put_all(models)
     
     latest_content = list(bucket.objects.filter(Prefix="models/latest/"))
-    dated_content = list(bucket.objects.filter(Prefix="models/2020-01-14/"))
+    dated_content = list(bucket.objects.filter(Prefix="models/historical/2020-01/2020-01-14/"))
 
     assert len(latest_content) == 2
     assert len(dated_content) == 2
