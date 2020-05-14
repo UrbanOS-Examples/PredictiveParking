@@ -33,18 +33,6 @@ node ('infrastructure') {
             deployTo(environment: 'dev', extraVars: [ 'extra_helm_args': extraHelmArgs ])
         }
 
-        doStageIfPromoted('Deploy to Staging')  {
-            def environment = 'staging'
-
-            deployTo(environment: environment)
-
-            scos.applyAndPushGitHubTag(environment)
-
-            scos.withDockerRegistry {
-                image.push(environment)
-            }
-        }
-
         doStageIfRelease('Deploy to Production') {
             def releaseTag = env.BRANCH_NAME
             def promotionTag = 'prod'
