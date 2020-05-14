@@ -8,7 +8,28 @@ logging.basicConfig(level=logging.WARNING)
 
 from app import model_provider
 
-def predict(input_datetime, zone_ids='All'):
+def predict_with(models, input_datetime, zone_ids='All'):
+    predictions = {}
+    lead_model = models[0]
+    for model in models:
+        predictions[model] = predict(input_datetime, zone_ids, model)
+
+    zipped_predictions = []
+    for index in range(len(predictions[lead_model])):
+        zone_id = predictions[lead_model][index]["zoneId"]
+        zipped_prediction = {
+            "zoneId": zone_id
+        }
+
+        for model in models:
+            assert zone_id == predictions[model][index]["zoneId"]
+            zipped_prediction[f"{model}Prediction"] = predictions[model][index]["availabilityPrediction"]
+
+        zipped_predictions.append(zipped_prediction)
+    return zipped_predictions
+
+
+def predict(input_datetime, zone_ids='All', model='latest'):
     if not is_valid_input_datetime(input_datetime): return []
 
     base_dir = path.dirname(path.abspath(__file__))
@@ -19,7 +40,7 @@ def predict(input_datetime, zone_ids='All'):
 
     cluster_ids = zone_cluster.clusterID.unique().tolist()
 
-    models = model_provider.get_all(cluster_ids)
+    models = model_provider.get_all(cluster_ids, model)
 
     prediction_output = []
 

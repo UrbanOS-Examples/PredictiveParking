@@ -20,17 +20,18 @@ MODEL_LATEST_PATH = 'models/latest/'
 
 
 def list_key(*args, **kwargs):
-    return tuple(*args)
+    # Add the two args together into a single array
+    return tuple(args[0] + [args[1]])
 
 
 @cached(cache=TTLCache(maxsize=128, ttl=TTL_SECONDS), key=list_key)
-def get_all(cluster_ids):
+def get_all(cluster_ids, model='latest'):
     bucket = _bucket_for_environment()
     models = {}
 
     for cluster_id in cluster_ids:
         cluster_id_string = str(cluster_id)
-        model_path = MODEL_LATEST_PATH + MODEL_FILE_PREFIX + cluster_id_string
+        model_path = f"models/{model}/" + MODEL_FILE_PREFIX + cluster_id_string
 
         if not _model_exists_at_path(bucket, model_path):
             continue
