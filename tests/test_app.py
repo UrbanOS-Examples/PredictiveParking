@@ -2,56 +2,65 @@ import pytest
 import json
 from freezegun import freeze_time
 
+pytestmark = pytest.mark.asyncio
 
-def test_no_zone_id_param_returns_all_zones(client):
+
+async def test_no_zone_id_param_returns_all_zones(client):
     with freeze_time("2020-01-14 14:00:00"):
-        response = client.get('/api/v1/predictions')
+        response = await client.get('/api/v1/predictions')
+        data = await response.get_data()
 
     assert response.status_code == 200
-    assert len(json.loads(response.data)) > 0
+    assert len(json.loads(data)) > 0
 
 
-def test_zone_ids_restricts_zones(client):
+async def test_zone_ids_restricts_zones(client):
     with freeze_time("2020-01-14 14:00:00"):
-        response = client.get('/api/v1/predictions?zone_ids=31004,31002')
+        response = await client.get('/api/v1/predictions?zone_ids=31004,31002')
+        data = await response.get_data()
 
     assert response.status_code == 200
-    assert len(json.loads(response.data)) == 2
+    assert len(json.loads(data)) == 2
 
-def test_empty_zone_ids_returns_no_predictions(client):
+async def test_empty_zone_ids_returns_no_predictions(client):
     with freeze_time("2020-01-14 14:00:00"):
-        response = client.get('/api/v1/predictions?zone_ids=')
+        response = await client.get('/api/v1/predictions?zone_ids=')
+        data = await response.get_data()
 
     assert response.status_code == 200
-    assert len(json.loads(response.data)) == 0
+    assert len(json.loads(data)) == 0
 
-def test_only_invalid_zone_ids_does_not_return_predictions(client):
+async def test_only_invalid_zone_ids_does_not_return_predictions(client):
     with freeze_time("2020-01-14 14:00:00"):
-        response = client.get('/api/v1/predictions?zone_ids=WQRQWEQ,ETWERWER,QWEQWRQ')
+        response = await client.get('/api/v1/predictions?zone_ids=WQRQWEQ,ETWERWER,QWEQWRQ')
+        data = await response.get_data()
 
     assert response.status_code == 200
-    assert len(json.loads(response.data)) == 0
+    assert len(json.loads(data)) == 0
 
-def test_mixed_invalid_and_valid_zone_ids_returns_predictions_for_valid(client):
+async def test_mixed_invalid_and_valid_zone_ids_returns_predictions_for_valid(client):
     with freeze_time("2020-01-14 14:00:00"):
-        response = client.get('/api/v1/predictions?zone_ids=WQRQWEQ,31004,QWEQWRQ')
+        response = await client.get('/api/v1/predictions?zone_ids=WQRQWEQ,31004,QWEQWRQ')
+        data = await response.get_data()
 
     assert response.status_code == 200
-    assert len(json.loads(response.data)) == 1
+    assert len(json.loads(data)) == 1
 
-def test_time_out_of_hours_returns_no_predictions(client):
+async def test_time_out_of_hours_returns_no_predictions(client):
     with freeze_time("2020-01-14 05:00:00"):
-        response = client.get('/api/v1/predictions')
+        response = await client.get('/api/v1/predictions')
+        data = await response.get_data()
 
     assert response.status_code == 200
-    assert len(json.loads(response.data)) == 0
+    assert len(json.loads(data)) == 0
 
-def test_no_zone_id_param_returns_all_zones_compared(client):
+async def test_no_zone_id_param_returns_all_zones_compared(client):
     with freeze_time("2020-01-14 14:00:00"):
-        response = client.get('/api/v0/predictions')
+        response = await client.get('/api/v0/predictions')
+        response_data = await response.get_data()
 
     assert response.status_code == 200
-    data = json.loads(response.data)
+    data = json.loads(response_data)
     assert len(data) > 0
     first_record = data[0]
     assert first_record["1monthPrediction"]
@@ -59,12 +68,11 @@ def test_no_zone_id_param_returns_all_zones_compared(client):
     assert first_record["6monthPrediction"]
     assert first_record["zoneId"]
 
-def test_zone_ids_restricts_zones_compared(client):
+async def test_zone_ids_restricts_zones_compared(client):
     with freeze_time("2020-01-14 14:00:00"):
-        response = client.get('/api/v0/predictions?zone_ids=31004,31002')
+        response = await client.get('/api/v0/predictions?zone_ids=31004,31002')
+        response_data = await response.get_data()
 
     assert response.status_code == 200
-    data = json.loads(response.data)
-    print(data)
-    assert len(data) > 0
-    assert len(json.loads(response.data)) == 2
+    data = json.loads(response_data)
+    assert len(data) == 2

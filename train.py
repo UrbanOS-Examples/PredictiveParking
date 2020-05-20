@@ -23,6 +23,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.neural_network import MLPRegressor
 
 from app import model_provider
+from app import zone_info
 
 DIRNAME = path.dirname(path.abspath(__file__))
 
@@ -116,13 +117,13 @@ def _sql_read(database_config, sql_query):
 
 
 def _train_models(occupancy_dataframe):
-    zone_cluster = pd.read_csv(path.join(DIRNAME, "app/meter_config/zone_cluster16_short_north_downtown_15_19.csv"))
+    zone_cluster = zone_info.zone_cluster()
    
     cleaned_occupancy_dataframe = _remove_unoccupied_timeslots(occupancy_dataframe)
     
     models = {}
 
-    for cluster_id in zone_cluster.clusterID.unique():
+    for cluster_id in zone_info.cluster_ids():
         logging.info(f"Processing cluster ID {cluster_id}")
 
         zones_in_cluster = zone_cluster[zone_cluster["clusterID"] == cluster_id].zoneID.astype('str').values

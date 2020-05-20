@@ -7,8 +7,12 @@ from os import path, environ
 from datetime import date
 from cachetools import cached, TTLCache
 from io import BytesIO
+import pandas as pd
+import asyncio
+from itertools import starmap
 
 from app import auth_provider
+from app import zone_info
 
 TTL_HOURS = 12
 TTL_SECONDS = TTL_HOURS * 60 * 60
@@ -18,32 +22,78 @@ VAULT_CREDENTIALS_KEY = environ.get('VAULT_CREDENTIALS_KEY', '')
 MODEL_FILE_PREFIX = 'mlp_shortnorth_downtown_cluster'
 MODEL_LATEST_PATH = 'models/latest/'
 
+MODELS = {
+    "latest": {},
+    "1month": {},
+    "3month": {},
+    "6month": {}
+}
 
-def list_key(*args, **kwargs):
-    # Add the two args together into a single array
-    return tuple(args[0] + [args[1]])
+
+def get_all(model='latest'):
+    return MODELS[model]
+    
+
+def warm_model_caches_synchronously():
+    asyncio.get_event_loop().run_until_complete(warm_model_caches())
 
 
-@cached(cache=TTLCache(maxsize=128, ttl=TTL_SECONDS), key=list_key)
-def get_all(cluster_ids, model='latest'):
-    bucket = _bucket_for_environment()
-    models = {}
+async def warm_model_caches():
+    [latest, one_month, three_month, six_month] = await asyncio.gather(
+        _fetch_all('latest'),
+        _fetch_all('1month'),
+        _fetch_all('3month'),
+        _fetch_all('6month')
+    )
 
-    for cluster_id in cluster_ids:
+    MODELS["latest"] = latest
+    MODELS["1month"] = one_month
+    MODELS["3month"] = three_month
+    MODELS["6month"] = six_month
+
+
+async def fetch_models_periodically():
+    while True:
+        await asyncio.sleep(TTL_SECONDS)
+        await warm_model_caches()
+
+
+def _fetch_model(id, bucket, model_path):
+    logging.debug(f"fetching: {model_path}")
+    with BytesIO() as in_memory_file:
+        bucket.download_fileobj(model_path, in_memory_file)
+        in_memory_file.seek(0)
+        logging.debug(f"done fetching {model_path}")
+        return (id, pickle.load(in_memory_file))
+
+
+async def _fetch_all(time_span):
+    bucket = await asyncio.get_event_loop().run_in_executor(None, _bucket_for_environment)
+
+    def _as_path(cluster_id):
         cluster_id_string = str(cluster_id)
-        model_path = f"models/{model}/" + MODEL_FILE_PREFIX + cluster_id_string
+        return (cluster_id_string, f"models/{time_span}/" + MODEL_FILE_PREFIX + cluster_id_string)
 
-        if not _model_exists_at_path(bucket, model_path):
-            continue
+    async def _check_exists(id, path):
+        return (id, path, await asyncio.get_event_loop().run_in_executor(None, _model_exists_at_path, bucket, path))
 
-        with BytesIO() as in_memory_file:
-            bucket.download_fileobj(model_path, in_memory_file)
-            in_memory_file.seek(0)
-            loaded_model = pickle.load(in_memory_file)
+    def _filter_exists(path_tuple):
+        _id, _path, exists = path_tuple
+        return exists
 
-        models[cluster_id_string] = loaded_model
+    async def _model_download(id, path, _exists):
+        return await asyncio.get_event_loop().run_in_executor(None, _fetch_model, id, bucket, path)
 
-    return models
+    model_paths = map(_as_path, zone_info.cluster_ids())
+
+    model_exists_futures = list(starmap(_check_exists, model_paths))
+    model_exists = await asyncio.gather(*model_exists_futures)
+    existing_model_paths = filter(_filter_exists, model_exists)
+
+    model_futures = list(starmap(_model_download, existing_model_paths))
+    models = await asyncio.gather(*model_futures)
+
+    return dict(models)
 
 
 def put_all(models):
@@ -66,8 +116,10 @@ def put_all(models):
 
 def _model_exists_at_path(bucket, path):
     try:
+        logging.debug(f"checking if model exists at {path}")
         s3 = _s3_resource()
         s3.Object(bucket.name, path).load()
+        logging.debug(f"done checking model exists at {path}")
         return True
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == "404":
@@ -92,8 +144,11 @@ def _s3_resource():
         vault_role=VAULT_ROLE,
         vault_credentials_key=VAULT_CREDENTIALS_KEY
     )
+    config = botocore.config.Config(
+        max_pool_connections=50,
+    )
     session = boto3.Session(**credentials)
-    return session.resource('s3')
+    return session.resource('s3', config=config)
 
 
 def _bucket_for_environment():
