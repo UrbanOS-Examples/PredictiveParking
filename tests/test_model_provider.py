@@ -2,6 +2,7 @@ from app import model_provider
 import pytest
 import boto3
 import pickle
+from os import path, walk
 from moto import mock_s3
 from freezegun import freeze_time
 

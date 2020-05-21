@@ -7,6 +7,8 @@ import logging
 logging.basicConfig(level=logging.WARNING)
 
 from app import model_provider
+from app import zone_info
+
 
 def predict_with(models, input_datetime, zone_ids='All'):
     predictions = {}
@@ -29,22 +31,16 @@ def predict_with(models, input_datetime, zone_ids='All'):
     return zipped_predictions
 
 
+
 def predict(input_datetime, zone_ids='All', model='latest'):
     if not is_valid_input_datetime(input_datetime): return []
 
-    base_dir = path.dirname(path.abspath(__file__))
-
     model_inputs = transform_datetime(input_datetime)
-
-    zone_cluster = pd.read_csv(path.join(base_dir, "meter_config/zone_cluster16_short_north_downtown_15_19.csv"))
-
-    cluster_ids = zone_cluster.clusterID.unique().tolist()
-
-    models = model_provider.get_all(cluster_ids, model)
+    models = model_provider.get_all(model)
 
     prediction_output = []
 
-    for _idx, row in zone_cluster.iterrows():
+    for _idx, row in zone_info.zone_cluster().iterrows():
         zone_id = str(row['zoneID'])
         if zone_ids != 'All' and zone_id not in zone_ids: continue
 

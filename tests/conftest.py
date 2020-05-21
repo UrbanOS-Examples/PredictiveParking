@@ -1,20 +1,30 @@
 import pytest
 
 from app import app
+from app import model_provider
 
 from os import path, walk
 from moto import mock_s3
 import boto3
 import pandas as pd
 
-
-@pytest.fixture
-def client(fake_model_files_in_s3):
-    with app.test_client() as client:
-        yield client
+import logging
+logging.getLogger('botocore').setLevel(logging.WARN)
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope='module')
+def client(with_warmup):
+    return app.test_client()
+
+
+@pytest.fixture(scope='session')
+async def with_warmup(fake_model_files_in_s3):
+    logging.info('started warming model cache')
+    await model_provider.warm_model_caches()
+    logging.info('finished warming model cache')
+
+
+@pytest.fixture(scope='session')
 def fake_model_files_in_s3():
     with mock_s3():
         conn = boto3.resource('s3')

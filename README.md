@@ -29,7 +29,9 @@ pipenv install --dev
 
 ## Running the application local
 ```bash
-pipenv run flask run
+export QUART_APP=app:app
+export QUART_DEBUG=true # if you want debug messages on slow calls, etc.
+pipenv run quart run
 ```
 
 ## Running tests
