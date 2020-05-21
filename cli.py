@@ -21,8 +21,6 @@ if __name__ == "__main__":
             input_datetime = datetime.now()
 
     print("Predicting parking availability at", input_datetime, '...')
-    print("Filling model cache from S3")
-    model_provider.warm_model_caches_synchronously()
     prediction_output = predictor.predict(input_datetime)
 
     if prediction_output:

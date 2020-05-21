@@ -31,12 +31,15 @@ MODELS = {
 
 
 def get_all(model='latest'):
+    if not MODELS[model]:
+        warm_model_caches_synchronously()
     return MODELS[model]
     
 
 def warm_model_caches_synchronously():
+    print('getting models for prediction')
     asyncio.get_event_loop().run_until_complete(warm_model_caches())
-
+    print('done getting models for prediction')
 
 async def warm_model_caches():
     [latest, one_month, three_month, six_month] = await asyncio.gather(
