@@ -25,13 +25,7 @@ MODEL_LATEST_PATH = 'models/latest/'
 MODELS = {}
 
 def get_all(model='latest'):
-    if not MODELS:
-        for model in get_comparative_models():
-            MODELS[model] = {}
-
-    if not MODELS[model]:
-        warm_model_caches_synchronously()
-    return MODELS[model]
+    return MODELS.get(model, {})
     
 
 def warm_model_caches_synchronously():
