@@ -12,7 +12,7 @@ service:
 mssql:
   database: parking_prediction
 
-comparedModels: '1month,3month,6month'
+comparedModels: '12month,18month,24month'
 
 ingress:
   enabled: true

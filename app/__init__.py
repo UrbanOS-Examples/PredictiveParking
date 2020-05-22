@@ -35,7 +35,7 @@ def predictions_comparative():
     return jsonify(results)
 
 def _get_comparative_models():
-    return getenv('COMPARED_MODELS', '1month,3month,6month').split(',')
+    return getenv('COMPARED_MODELS', '12month,18month,24month').split(',')
 
 if __name__ == '__main__':
     app.run()
