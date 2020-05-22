@@ -63,9 +63,9 @@ async def test_no_zone_id_param_returns_all_zones_compared(client):
     data = json.loads(response_data)
     assert len(data) > 0
     first_record = data[0]
-    assert first_record["1monthPrediction"]
-    assert first_record["3monthPrediction"]
-    assert first_record["6monthPrediction"]
+    assert first_record["12monthPrediction"]
+    assert first_record["18monthPrediction"]
+    assert first_record["24monthPrediction"]
     assert first_record["zoneId"]
 
 async def test_zone_ids_restricts_zones_compared(client):

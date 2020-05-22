@@ -61,12 +61,8 @@ async def predictions_comparative():
     else:
         zone_ids = 'All'
 
-    results = predictor.predict_with(_get_comparative_models(), now, zone_ids)
+    results = predictor.predict_with(model_provider.get_comparative_models(), now, zone_ids)
     return jsonify(results)
-
-
-def _get_comparative_models():
-    return getenv('COMPARED_MODELS', '1month,3month,6month').split(',')
 
 
 if __name__ == '__main__':

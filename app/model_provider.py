@@ -3,7 +3,7 @@ import botocore
 import logging
 import pickle
 
-from os import path, environ
+from os import path, environ, getenv
 from datetime import date
 from cachetools import cached, TTLCache
 from io import BytesIO
@@ -22,12 +22,7 @@ VAULT_CREDENTIALS_KEY = environ.get('VAULT_CREDENTIALS_KEY', '')
 MODEL_FILE_PREFIX = 'mlp_shortnorth_downtown_cluster'
 MODEL_LATEST_PATH = 'models/latest/'
 
-MODELS = {
-    "latest": {},
-    "1month": {},
-    "3month": {},
-    "6month": {}
-}
+MODELS = {}
 
 
 def get_all(model='latest'):
@@ -42,17 +37,16 @@ def warm_model_caches_synchronously():
     print('done getting models for prediction')
 
 async def warm_model_caches():
-    [latest, one_month, three_month, six_month] = await asyncio.gather(
-        _fetch_all('latest'),
-        _fetch_all('1month'),
-        _fetch_all('3month'),
-        _fetch_all('6month')
-    )
+    models = get_comparative_models()
+    model_fetches = [_fetch_all('latest')]
 
-    MODELS["latest"] = latest
-    MODELS["1month"] = one_month
-    MODELS["3month"] = three_month
-    MODELS["6month"] = six_month
+    for model in models:
+        model_fetches.append(_fetch_all(model))
+
+    fetched_models = await asyncio.gather(*model_fetches)
+
+    for (name, model_dict) in fetched_models:
+        MODELS[name] = model_dict
 
 
 async def fetch_models_periodically():
@@ -96,7 +90,7 @@ async def _fetch_all(time_span):
     model_futures = list(starmap(_model_download, existing_model_paths))
     models = await asyncio.gather(*model_futures)
 
-    return dict(models)
+    return (time_span, dict(models))
 
 
 def put_all(models):
@@ -158,3 +152,6 @@ def _bucket_for_environment():
     s3 = _s3_resource()
     environment = environ.get('SCOS_ENV', 'dev')
     return s3.Bucket(environment + '-parking-prediction')
+
+def get_comparative_models():
+    return getenv('COMPARED_MODELS', '12month,18month,24month').split(',')
