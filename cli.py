@@ -3,6 +3,7 @@
 from datetime import datetime
 import sys
 from app import predictor
+from app import model_provider
 
 if __name__ == "__main__":
     if len(sys.argv) == 6:
