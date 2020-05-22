@@ -39,8 +39,8 @@ def fake_model_files_in_s3():
             for filename in filenames:
                 file_path = path.join(directory, filename)
                 bucket.upload_file(file_path, '/models/latest/' + filename)
-                bucket.upload_file(file_path, '/models/1month/' + filename)
-                bucket.upload_file(file_path, '/models/3month/' + filename)
-                bucket.upload_file(file_path, '/models/6month/' + filename)
+                bucket.upload_file(file_path, '/models/12month/' + filename)
+                bucket.upload_file(file_path, '/models/18month/' + filename)
+                bucket.upload_file(file_path, '/models/24month/' + filename)
 
         yield
