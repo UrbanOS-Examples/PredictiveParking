@@ -144,10 +144,8 @@ def _train_models(occupancy_dataframe):
         occupancy_for_cluster['hour'] = list(zip(occupancy_for_cluster.index.hour,occupancy_for_cluster.index.minute))
         occupancy_for_cluster['hour'] = occupancy_for_cluster.hour.astype('category')
         occupancy_for_cluster['dayofweek'] = occupancy_for_cluster.index.dayofweek.astype('category')
-        occupancy_for_cluster['month'] = occupancy_for_cluster.index.month.astype('category')
-        occupancy_for_cluster = occupancy_for_cluster.loc[:,['total_cnt','available_rate','hour','dayofweek','month']]
-        #     X = pd.DataFrame(occupancy_for_cluster.loc[:,['total_cnt','hour', 'dayofweek','month']])
-        X = pd.DataFrame(occupancy_for_cluster.loc[:,['hour', 'dayofweek','month']])
+        occupancy_for_cluster = occupancy_for_cluster.loc[:,['total_cnt','available_rate','hour','dayofweek']]
+        X = pd.DataFrame(occupancy_for_cluster.loc[:,['hour', 'dayofweek']])
         y = pd.DataFrame(occupancy_for_cluster['available_rate'])
         # one-hot coding
         for col in X.select_dtypes(include='category').columns:
