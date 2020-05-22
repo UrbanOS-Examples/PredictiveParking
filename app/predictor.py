@@ -73,11 +73,7 @@ def transform_datetime(input_datetime):
     day_input = [0] * 6
     day_input[day_index] = 1
 
-    month_index = input_datetime.month
-    month_input = [0] * 12
-    month_input[month_index-1] = 1
-
-    return(hour_input[1:] + day_input[1:] + month_input[1:])
+    return(hour_input[1:] + day_input[1:])
 
 def clamp(n, minn = 0, maxn = 1):
     return max(min(maxn, n), minn)

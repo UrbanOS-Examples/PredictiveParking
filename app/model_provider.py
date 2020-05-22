@@ -24,11 +24,8 @@ MODEL_LATEST_PATH = 'models/latest/'
 
 MODELS = {}
 
-
 def get_all(model='latest'):
-    if not MODELS[model]:
-        warm_model_caches_synchronously()
-    return MODELS[model]
+    return MODELS.get(model, {})
     
 
 def warm_model_caches_synchronously():

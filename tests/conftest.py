@@ -3,7 +3,7 @@ import pytest
 from app import app
 from app import model_provider
 
-from os import path, walk
+from os import path, walk, environ
 from moto import mock_s3
 import boto3
 import pandas as pd
@@ -26,6 +26,7 @@ async def with_warmup(fake_model_files_in_s3):
 
 @pytest.fixture(scope='session')
 def fake_model_files_in_s3():
+    environ['COMPARED_MODELS'] = '12month,18month,24month'
     with mock_s3():
         conn = boto3.resource('s3')
 

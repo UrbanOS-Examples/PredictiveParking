@@ -23,7 +23,7 @@ if __name__ == "__main__":
             writer.writeheader()
             for cnt, date in enumerate(fp):
                 date_to_predict = datetime.strptime(date.strip(), '%Y-%m-%d %H:%M:%S.000')
-                prediction_output = predictor.predict(date_to_predict)
+                prediction_output = predictor.predict(date_to_predict, 'All', model)
                 annotated_predictions = _annotate_predictions(prediction_output, date.strip(), model)
                 if prediction_output:
                     for prediction in prediction_output:
