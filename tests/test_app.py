@@ -1,6 +1,11 @@
 import pytest
 import json
+import websockets
 from freezegun import freeze_time
+
+from tests.fake_websocket_server import create_fake_server, update_event
+from tests.util import set_availability_zone_index
+from app import availability_provider
 
 pytestmark = pytest.mark.asyncio
 
@@ -76,3 +81,47 @@ async def test_zone_ids_restricts_zones_compared(client):
     assert response.status_code == 200
     data = json.loads(response_data)
     assert len(data) == 2
+
+
+async def test_app_uses_availability_if_its_there(client):
+    zone_with_availability_data = '31006'
+    zone_without_availability_data = '31001'
+    zone_we_did_not_ask_for = '31002'
+    zone_ids = [zone_without_availability_data, zone_with_availability_data]
+    meter_and_zone_list = [
+        {'meter_id': '9861', 'zone_id': zone_with_availability_data},
+        {'meter_id': '9862', 'zone_id': zone_with_availability_data},
+        {'meter_id': '9863', 'zone_id': zone_with_availability_data},
+        {'meter_id': '9864', 'zone_id': zone_with_availability_data},
+        {'meter_id': '9865', 'zone_id': zone_we_did_not_ask_for}
+    ]
+    occupancy_messages = [
+        update_event({"id":"9861","occupancy":"UNOCCUPIED","time_of_ingest":"2020-05-21T18:00:00.000000"}),
+        update_event({"id":"9862","occupancy":"UNOCCUPIED","time_of_ingest":"2020-05-21T18:00:00.000000"}),
+        update_event({"id":"9863","occupancy":"OCCUPIED","time_of_ingest":"2020-05-21T18:00:00.000000"}),
+        update_event({"id":"9864","occupancy":"UNOCCUPIED","time_of_ingest":"2020-05-21T18:00:00.000000"}),
+        update_event({"id":"9865","occupancy":"UNOCCUPIED","time_of_ingest":"2020-05-21T18:00:00.000000"})
+    ]
+    uri='ws://localhost:5001/socket/websocket'
+    fake_server = create_fake_server(messages=occupancy_messages)
+
+    with set_availability_zone_index(meter_and_zone_list), \
+        freeze_time('2020-05-21T18:05:00.000000'):          
+        async with websockets.serve(fake_server, "localhost", 5001):
+            await availability_provider.handle_websocket_messages(uri)
+
+        response = await client.get(f"/api/v1/predictions?zone_ids={','.join(zone_ids)}")
+        response_data = await response.get_data()
+
+    assert response.status_code == 200
+    data = json.loads(response_data)
+    assert data == [
+        {
+            'availabilityPrediction': 0.4312,
+            'zoneId': zone_without_availability_data
+        },
+        {
+            'availabilityPrediction': 0.75,
+            'zoneId': zone_with_availability_data
+        },
+    ]

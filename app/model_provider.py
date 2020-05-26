@@ -33,6 +33,8 @@ def warm_model_caches_synchronously():
     asyncio.get_event_loop().run_until_complete(warm_model_caches())
     print('done getting models for prediction')
 
+
+# TODO - make this retry on failure
 async def warm_model_caches():
     models = get_comparative_models()
     model_fetches = [_fetch_all('latest')]

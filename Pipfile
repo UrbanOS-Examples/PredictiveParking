@@ -22,6 +22,10 @@ pyodbc = "==4.0.30"
 cachetools = "==4.1.0"
 quart = "*"
 asyncio = "*"
+websockets = "*"
+python-dateutil = "*"
+requests = "*"
+backoff = "*"
 
 [requires]
 python_version = "3"
