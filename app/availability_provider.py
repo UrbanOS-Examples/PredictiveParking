@@ -1,6 +1,7 @@
 import json
 import websockets
 import backoff
+import asyncio
 from datetime import datetime
 from dateutil import tz
 from copy import deepcopy
@@ -38,7 +39,7 @@ class AvailabilityProvider:
 
       async for message_string in websocket:
         message = json.loads(message_string)
-        self.zone_index = handler([message], deepcopy(self.zone_index))
+        self.zone_index = await asyncio.get_event_loop().run_in_executor(None, handler, [message], self.zone_index)
 
   def get_all_availability(self):
     availabilities = {}

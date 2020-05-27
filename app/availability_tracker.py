@@ -51,10 +51,11 @@ def create_message_handler(meter_index):
       'occupied': occupied,
       'last_seen': last_seen
     }
+
     return index
 
   def _handler(messages, zone_index):
-    return reduce(_reducer, messages, zone_index)
+    return reduce(_reducer, messages, deepcopy(zone_index))
 
   return _handler
 
