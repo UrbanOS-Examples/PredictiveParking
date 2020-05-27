@@ -1,10 +1,12 @@
 from app import model_provider
 import pytest
 import boto3
+import botocore
 import pickle
 from os import path, walk
 from moto import mock_s3
 from freezegun import freeze_time
+from mockito import when, mock, any, verify, patch, unstub, kwargs
 
 
 @pytest.fixture(scope='module')
@@ -15,6 +17,13 @@ def setup_all():
         bucket.create()
 
         yield conn, bucket
+
+
+@pytest.mark.asyncio
+async def test_warm_is_resilient(fake_model_files_in_s3):
+    actual_boto3_session = boto3.Session()
+    with when(boto3).Session(**kwargs).thenRaise(Exception('this should not crash things')).thenReturn(actual_boto3_session):
+        await model_provider.warm_model_caches()
 
 
 def test_train_writes_models_to_s3(setup_all):
