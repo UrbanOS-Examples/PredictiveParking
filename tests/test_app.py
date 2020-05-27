@@ -120,7 +120,7 @@ async def test_app_uses_availability_if_its_there(client):
 
     with use_availability_provider(availability_provider), \
         freeze_time('2020-05-21T18:05:00.000000'):          
-        async with websockets.serve(fake_server, "localhost", 5001):
+        async with websockets.serve(fake_server, '127.0.0.1', 5001):
             await availability_provider.handle_websocket_messages()
 
         response = await client.get(f"/api/v1/predictions?zone_ids={','.join(zone_ids)}")

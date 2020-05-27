@@ -81,7 +81,7 @@ def test_handler_reduces_applicable_messages_into_index():
   }
 
 
-def test_occupancy_returns_valid_availability_for_zone_and_timestamp():
+def test_availability_returns_valid_availability_for_zone_and_timestamp():
   timestamp_to_test = as_ts('2020-05-21T17:15:01.000000')
 
   zone_that_is_valid_because_all_data_is_within_last_15_minutes = {
@@ -137,6 +137,6 @@ def test_occupancy_returns_valid_availability_for_zone_and_timestamp():
 
   assert None == availability_tracker.availability(zone_index, '0001', timestamp_to_test)
   assert None == availability_tracker.availability(zone_index, '0002', timestamp_to_test)
-  assert round(0.6666, 2) == round(availability_tracker.availability(zone_index, '0003', timestamp_to_test), 2)
+  assert 0.6667 == availability_tracker.availability(zone_index, '0003', timestamp_to_test)
   assert None == availability_tracker.availability(zone_index, '0004', timestamp_to_test)
   assert None == availability_tracker.availability(zone_index, 'missing zone', timestamp_to_test)

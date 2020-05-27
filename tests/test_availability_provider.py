@@ -73,7 +73,7 @@ async def test_can_consume_stream_from_server(event_loop):
   ]
 
   fake_server = create_fake_server(messages=first_chunk_of_messages + second_chunk_of_messages)
-  async with websockets.serve(fake_server, "localhost", 5001):
+  async with websockets.serve(fake_server, '127.0.0.1', 5001):
     await availability_provider.handle_websocket_messages()
 
     with freeze_time('2020-05-21T18:05:00.000000'):
@@ -87,7 +87,7 @@ async def test_can_consume_stream_from_server(event_loop):
       assert availability_provider.get_all_availability() == {}
 
   fake_server = create_fake_server(messages=third_chunk_of_messages)
-  async with websockets.serve(fake_server, "localhost", 5001):
+  async with websockets.serve(fake_server, '127.0.0.1', 5001):
     await availability_provider.handle_websocket_messages()
 
     with freeze_time('2020-05-21T18:35:00.000000'):
@@ -121,7 +121,7 @@ async def test_recovers_from_errors(event_loop):
   
   fake_server = create_fake_server(messages=messages)
     
-  async with websockets.serve(fake_server, "localhost", 5001):
+  async with websockets.serve(fake_server, '127.0.0.1', 5001):
     with patch(websockets.connect, fake_websocket_failure):
       await availability_provider.handle_websocket_messages()
 
