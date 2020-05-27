@@ -7,7 +7,7 @@ from itertools import starmap
 from copy import deepcopy
 
 
-INVALID_AFTER_MINUTES = 15
+INVALID_AFTER_MINUTES = 5
 
 
 def availability(zone_index, zone_id, timestamp):

@@ -88,11 +88,11 @@ def test_occupancy_returns_valid_availability_for_zone_and_timestamp():
     'meters': {
       '9864': {
         'occupied': True,
-        'last_seen': as_ts('2020-05-21T17:05:00.032202')
+        'last_seen': as_ts('2020-05-21T17:14:00.032202')
       },
       '9865': {
         'occupied': False,
-        'last_seen': as_ts('2020-05-21T17:10:00.037202')
+        'last_seen': as_ts('2020-05-21T17:12:00.037202')
       },
       '9866': {
         'occupied': False,

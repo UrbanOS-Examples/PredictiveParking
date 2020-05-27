@@ -8,13 +8,14 @@ from freezegun import freeze_time
 from contextlib import asynccontextmanager
 
 from tests.fake_websocket_server import create_fake_server, update_event
-from tests.util import as_ts, set_availability_zone_index
+from tests.util import as_ts
 
-from app import availability_provider
+from app.availability_provider import AvailabilityProvider
 
 
 @pytest.mark.asyncio
 async def test_can_consume_stream_from_server(event_loop):
+  uri='ws://localhost:5001/socket/websocket'
   meter_and_zone_list = [
     {'meter_id': '9861', 'zone_id': '0001'},
     {'meter_id': '9862', 'zone_id': '0001'},
@@ -28,6 +29,7 @@ async def test_can_consume_stream_from_server(event_loop):
     {'meter_id': '9881', 'zone_id': '0003'},
     {'meter_id': '9882', 'zone_id': '0003'}
   ]
+  availability_provider = AvailabilityProvider(uri, meter_and_zone_list)
 
   first_chunk_of_messages = [
     update_event({"id":"9861","occupancy":"UNOCCUPIED","time_of_ingest":"2020-05-21T18:00:00.000000"}),
@@ -69,37 +71,36 @@ async def test_can_consume_stream_from_server(event_loop):
     update_event({"id":"9881","occupancy":"UNOCCUPIED","time_of_ingest":"2020-05-21T18:30:15.000000"}),
     update_event({"id":"9882","occupancy":"OCCUPIED","time_of_ingest":"2020-05-21T18:30:15.000000"})
   ]
-  uri='ws://localhost:5001/socket/websocket'
 
-  with set_availability_zone_index(meter_and_zone_list):
-    fake_server = create_fake_server(messages=first_chunk_of_messages + second_chunk_of_messages)
-    async with websockets.serve(fake_server, "localhost", 5001):
-      await availability_provider.handle_websocket_messages(uri)
+  fake_server = create_fake_server(messages=first_chunk_of_messages + second_chunk_of_messages)
+  async with websockets.serve(fake_server, "localhost", 5001):
+    await availability_provider.handle_websocket_messages()
 
-      with freeze_time('2020-05-21T18:05:00.000000'):
-        assert availability_provider.get_all_availability() == {
-          '0001': 0.25,
-          '0002': 0.3333,
-          '0003': 1.0
-        }
+    with freeze_time('2020-05-21T18:05:00.000000'):
+      assert availability_provider.get_all_availability() == {
+        '0001': 0.25,
+        '0002': 0.3333,
+        '0003': 1.0
+      }
 
-      with freeze_time('2020-05-21T18:30:00.000000'):
-        assert availability_provider.get_all_availability() == {}
-  
-    fake_server = create_fake_server(messages=third_chunk_of_messages)
-    async with websockets.serve(fake_server, "localhost", 5001):
-      await availability_provider.handle_websocket_messages(uri)
+    with freeze_time('2020-05-21T18:30:00.000000'):
+      assert availability_provider.get_all_availability() == {}
 
-      with freeze_time('2020-05-21T18:35:00.000000'):
-        availability_provider.get_all_availability() == {
-          '0001': 0.0,
-          '0002': 0.6667,
-          '0003': 0.5
-        }
+  fake_server = create_fake_server(messages=third_chunk_of_messages)
+  async with websockets.serve(fake_server, "localhost", 5001):
+    await availability_provider.handle_websocket_messages()
+
+    with freeze_time('2020-05-21T18:35:00.000000'):
+      availability_provider.get_all_availability() == {
+        '0001': 0.0,
+        '0002': 0.6667,
+        '0003': 0.5
+      }
 
 
 @pytest.mark.asyncio
 async def test_recovers_from_errors(event_loop):
+  uri='ws://localhost:5001/socket/websocket'
   meter_and_zone_list = [
     {'meter_id': '9861', 'zone_id': '0001'},
 
@@ -107,6 +108,8 @@ async def test_recovers_from_errors(event_loop):
 
     {'meter_id': '9881', 'zone_id': '0003'}
   ]
+
+  availability_provider = AvailabilityProvider(uri, meter_and_zone_list)
 
   messages = [
     update_event({"id":"9861","occupancy":"UNOCCUPIED","time_of_ingest":"2020-05-21T18:00:00.000000"}),
@@ -116,20 +119,18 @@ async def test_recovers_from_errors(event_loop):
     update_event({"id":"9881","occupancy":"OCCUPIED","time_of_ingest":"2020-05-21T18:00:00.000000"}),
   ]
   
-  uri='ws://localhost:5001/socket/websocket'
   fake_server = create_fake_server(messages=messages)
     
-  with set_availability_zone_index(meter_and_zone_list):
-    async with websockets.serve(fake_server, "localhost", 5001):
-      with patch(websockets.connect, fake_websocket_failure):
-        await availability_provider.handle_websocket_messages(uri)
+  async with websockets.serve(fake_server, "localhost", 5001):
+    with patch(websockets.connect, fake_websocket_failure):
+      await availability_provider.handle_websocket_messages()
 
-        with freeze_time('2020-05-21T18:05:00.000000'):
-          assert availability_provider.get_all_availability() == {
-            '0001': 1,
-            '0002': 1,
-            '0003': 0
-          }
+      with freeze_time('2020-05-21T18:05:00.000000'):
+        assert availability_provider.get_all_availability() == {
+          '0001': 1,
+          '0002': 1,
+          '0003': 0
+        }
 
 
 @asynccontextmanager

@@ -6,21 +6,31 @@ from pytz import timezone
 from app import predictor
 from app import now_adjusted
 from app import model_provider
-from app import availability_provider
+from app import zone_info
+from app.availability_provider import AvailabilityProvider
 
 import logging
 logging.basicConfig(level=logging.INFO)
 
 app = Quart(__name__)
 
+app.availability_provider = AvailabilityProvider(
+    'wss://streams.smartcolumbusos.com/socket/websocket',
+    []
+)
+
 
 @app.before_serving
 async def startup():
     logging.info('starting API')
+    app.availability_provider = AvailabilityProvider(
+        'wss://streams.smartcolumbusos.com/socket/websocket',
+        zone_info.meter_and_zone_list()
+    )
     loop = asyncio.get_event_loop()
 
     logging.info('scheduling availability cache to be filled from stream')
-    app.model_fetcher = loop.create_task(availability_provider.listen_to_stream_forever())
+    app.model_fetcher = loop.create_task(app.availability_provider.handle_websocket_messages())
     logging.info('scheduling model cache to be re-warmed periodically')
     app.model_fetcher = loop.create_task(model_provider.fetch_models_periodically())
     logging.info('finished starting API')
@@ -50,7 +60,7 @@ async def predictions():
         zone_ids = 'All'
 
     prediction_index = predictor.predict_as_index(now, zone_ids)
-    availability_index = availability_provider.get_all_availability()
+    availability_index = app.availability_provider.get_all_availability()
 
     predictions_and_availability = _merge_existing(prediction_index, availability_index)
     predictions_and_availability_formatted = predictor.predict_as_api_format(predictions_and_availability)
@@ -59,7 +69,6 @@ async def predictions():
 
 
 def _merge_existing(updatee, updator):
-    # return {**updatee, **updator}
     for key, value in updator.items():
         if key in updatee:
             updatee[key] = value
@@ -82,7 +91,7 @@ async def predictions_comparative():
 
 @app.route('/api/v1/availability')
 async def availability():
-    return jsonify(availability_provider.get_all_availability())
+    return jsonify(app.availability_provider.get_all_availability())
 
 
 if __name__ == '__main__':
