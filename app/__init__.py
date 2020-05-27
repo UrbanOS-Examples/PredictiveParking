@@ -30,7 +30,7 @@ async def startup():
     loop = asyncio.get_event_loop()
 
     logging.info('scheduling availability cache to be filled from stream')
-    app.model_fetcher = loop.create_task(app.availability_provider.handle_websocket_messages())
+    app.availability_streamer = loop.create_task(app.availability_provider.handle_websocket_messages())
     logging.info('scheduling model cache to be re-warmed periodically')
     app.model_fetcher = loop.create_task(model_provider.fetch_models_periodically())
     logging.info('finished starting API')
@@ -43,6 +43,7 @@ async def startup():
 @app.after_serving
 async def shutdown():
     app.model_fetcher.cancel()
+    app.availability_streamer.cancel()
 
 
 @app.route('/healthcheck')
