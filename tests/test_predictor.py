@@ -1,5 +1,6 @@
 from app import predictor
 from app import model_provider
+from app import availability_provider
 
 from datetime import datetime
 

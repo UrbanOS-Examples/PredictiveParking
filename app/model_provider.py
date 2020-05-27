@@ -2,6 +2,7 @@ import boto3
 import botocore
 import logging
 import pickle
+import backoff
 
 from os import path, environ, getenv
 from datetime import date
@@ -13,6 +14,8 @@ from itertools import starmap
 
 from app import auth_provider
 from app import zone_info
+from app.util import log_exception
+
 
 TTL_HOURS = 12
 TTL_SECONDS = TTL_HOURS * 60 * 60
@@ -24,6 +27,7 @@ MODEL_LATEST_PATH = 'models/latest/'
 
 MODELS = {}
 
+
 def get_all(model='latest'):
     return MODELS.get(model, {})
     
@@ -33,6 +37,11 @@ def warm_model_caches_synchronously():
     asyncio.get_event_loop().run_until_complete(warm_model_caches())
     print('done getting models for prediction')
 
+
+
+@backoff.on_exception(backoff.expo,
+                    Exception,
+                    on_backoff=log_exception)
 async def warm_model_caches():
     models = get_comparative_models()
     model_fetches = [_fetch_all('latest')]
