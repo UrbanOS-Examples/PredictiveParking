@@ -105,7 +105,7 @@ async def _fetch_all(time_span):
 def put_all(models):
     bucket = _bucket_for_environment()
 
-    dated_path = 'models/' + historical_model_name(date.today())
+    dated_path = 'models/' + historical_model_name(date.today()) + '/'
 
     _delete_models_in_path(bucket, dated_path)
     _delete_models_in_path(bucket, MODEL_LATEST_PATH)
