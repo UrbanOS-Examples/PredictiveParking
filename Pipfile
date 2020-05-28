@@ -26,6 +26,7 @@ websockets = "*"
 python-dateutil = "*"
 requests = "*"
 backoff = "*"
+prometheus-client = "*"
 
 [requires]
 python_version = "3"
