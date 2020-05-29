@@ -24,6 +24,7 @@ RUN pipenv lock --requirements > requirements.txt \
 
 COPY app /app
 RUN chmod +x app/start.sh
+RUN chmod +x app/train.sh
 
 COPY ./tests /tests
 RUN pipenv run pytest /tests \
