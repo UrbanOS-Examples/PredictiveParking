@@ -1,9 +1,13 @@
-from os import path
-import hvac
+from os import path, environ
 from cachetools import cached, LRUCache
+import hvac
+import boto3
+import botocore
 
 DEFAULT_VAULT_URL = 'http://vault.vault:8200'
 DEFAULT_TOKEN_FILE_PATH = '/var/run/secrets/kubernetes.io/serviceaccount/token'
+VAULT_ROLE = environ.get('VAULT_ROLE', '')
+VAULT_CREDENTIALS_KEY = environ.get('VAULT_CREDENTIALS_KEY', '')
 
 
 @cached(cache=LRUCache(maxsize=128))
@@ -18,3 +22,14 @@ def get_credentials(vault_role, vault_credentials_key, vault_url=DEFAULT_VAULT_U
     return response['data']
   
   return {}
+
+def authorized_s3_resource():
+    credentials = get_credentials(
+        vault_role=VAULT_ROLE,
+        vault_credentials_key=VAULT_CREDENTIALS_KEY
+    )
+    config = botocore.config.Config(
+        max_pool_connections=50,
+    )
+    session = boto3.Session(**credentials)
+    return session.resource('s3', config=config)

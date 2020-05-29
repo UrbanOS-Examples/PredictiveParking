@@ -2,15 +2,11 @@
 ### this is to test the model
 from datetime import datetime, date, timedelta
 from os import environ
-import boto3
-import botocore
 import sys
 import csv
 from app import predictor, model_provider, auth_provider
 import argparse
 
-VAULT_ROLE = environ.get('VAULT_ROLE', '')
-VAULT_CREDENTIALS_KEY = environ.get('VAULT_CREDENTIALS_KEY', '')
 LOCAL_FILE_NAME = "report.csv"
 S3_FILE_NAME = "reports/parking_predictions_daily.csv"
 
@@ -26,21 +22,9 @@ def _annotate_predictions(predictions, date, model):
 
 
 def _bucket_for_environment():
-    s3 = _s3_resource()
+    s3 = auth_provider.authorized_s3_resource()
     environment = environ.get('SCOS_ENV', 'dev')
     return s3.Bucket(environment + '-os-public-data')
-
-
-def _s3_resource():
-    credentials = auth_provider.get_credentials(
-        vault_role=VAULT_ROLE,
-        vault_credentials_key=VAULT_CREDENTIALS_KEY
-    )
-    config = botocore.config.Config(
-        max_pool_connections=50,
-    )
-    session = boto3.Session(**credentials)
-    return session.resource('s3', config=config)
 
 
 def _beginning_of_day(day):
