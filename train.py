@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import pandas as pd
 import numpy as np
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from math import sqrt
 import pyodbc
 import pickle
@@ -22,8 +22,13 @@ from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_val_score
 from sklearn.neural_network import MLPRegressor
 
+from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
+
 from app import model_provider
 from app import zone_info
+from app import predictor
+from app import now_adjusted
+from pytz import timezone
 
 DIRNAME = path.dirname(path.abspath(__file__))
 
@@ -36,6 +41,32 @@ def main():
     models = _train_models(occupancy_dataframe)
         
     model_provider.put_all(models)
+
+    _validate_variance()
+
+
+def _validate_variance():
+    yesterday_model = model_provider.historical_model_name(date.today() - timedelta(1))
+    today_model =  model_provider.historical_model_name(date.today())
+    models = [yesterday_model, today_model]
+    model_provider.warm_model_caches_synchronously(models)
+
+    now = now_adjusted.adjust(datetime.now(timezone('US/Eastern')))
+    today_at_ten=now.replace(hour=10)
+    predictions = predictor.predict_with(models, today_at_ten)
+
+    registry = CollectorRegistry()
+    gauge = Gauge('parking_model_variance', 'Variance in prediction after new model is trained', registry=registry, labelnames=['zone'])
+    for prediction in predictions:
+        prediction_yesterday = prediction[f"{yesterday_model}Prediction"]
+        prediction_today = prediction[f"{today_model}Prediction"]
+        variance = abs(round(prediction_today - prediction_yesterday, 10))
+        zone = prediction["zoneId"]
+        gauge.labels(zone=zone).set(variance)
+
+    environment = os.getenv('SCOS_ENV') or 'dev'
+    validation_time = datetime.strftime(datetime.now(), "%d/%m/%Y %H:%M:%S")
+    push_to_gateway(f"https://pushgateway.{environment}.internal.smartcolumbusos.com", job="variance", registry=registry)
 
 
 def _get_database_config():

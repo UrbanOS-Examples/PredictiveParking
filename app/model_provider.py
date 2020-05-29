@@ -32,18 +32,21 @@ def get_all(model='latest'):
     return MODELS.get(model, {})
     
 
-def warm_model_caches_synchronously():
+def warm_model_caches_synchronously(extra_models=[]):
     print('getting models for prediction')
-    asyncio.get_event_loop().run_until_complete(warm_model_caches())
+    asyncio.get_event_loop().run_until_complete(warm_model_caches(extra_models))
     print('done getting models for prediction')
 
+
+def historical_model_name(date):
+    return 'historical/' + date.strftime("%Y-%m") + '/' + date.isoformat()
 
 
 @backoff.on_exception(backoff.expo,
                     Exception,
                     on_backoff=log_exception)
-async def warm_model_caches():
-    models = get_comparative_models()
+async def warm_model_caches(extra_models=[]):
+    models = get_comparative_models() + extra_models
     model_fetches = [_fetch_all('latest')]
 
     for model in models:
@@ -102,7 +105,7 @@ async def _fetch_all(time_span):
 def put_all(models):
     bucket = _bucket_for_environment()
 
-    dated_path = 'models/historical/' + date.today().strftime("%Y-%m") + '/' + date.today().isoformat() + '/'
+    dated_path = 'models/' + historical_model_name(date.today()) + '/'
 
     _delete_models_in_path(bucket, dated_path)
     _delete_models_in_path(bucket, MODEL_LATEST_PATH)
