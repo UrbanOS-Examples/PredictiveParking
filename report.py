@@ -24,7 +24,7 @@ def _annotate_predictions(predictions, date, model):
 def _bucket_for_environment():
     s3 = auth_provider.authorized_s3_resource()
     environment = environ.get('SCOS_ENV', 'dev')
-    return s3.Bucket(environment + '-os-public-data')
+    return s3.Bucket(environment + '-parking-prediction-public')
 
 
 def _beginning_of_day(day):
