@@ -57,4 +57,4 @@ if __name__ == "__main__":
                 for prediction in prediction_output:
                     writer.writerow(prediction)
 
-    bucket.upload_file(LOCAL_FILE_NAME, S3_FILE_NAME)
+    bucket.upload_file(LOCAL_FILE_NAME, S3_FILE_NAME, ExtraArgs={'ACL':'public-read'})
