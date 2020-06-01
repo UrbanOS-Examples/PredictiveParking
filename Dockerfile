@@ -14,7 +14,7 @@ RUN apt-get -y install nginx \
     && ACCEPT_EULA=Y apt-get -y install msodbcsql17 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install pipenv 'pipenv==2018.11.26'
+RUN pip3 install 'pipenv==2018.11.26'
 
 ADD Pipfile* /
 
