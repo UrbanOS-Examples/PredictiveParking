@@ -33,6 +33,8 @@ RUN pipenv run pytest /tests \
 
 COPY train.py /
 
+COPY report.py /
+
 COPY nginx.conf /etc/nginx
 
 WORKDIR /app

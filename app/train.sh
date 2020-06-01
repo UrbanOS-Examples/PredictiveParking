@@ -2,8 +2,8 @@
 
 set -e
 
-python train.py
+python /train.py
 
 set +e
 
-python report.py
+python /report.py
