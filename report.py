@@ -13,6 +13,12 @@ S3_FILE_NAME = "reports/parking_predictions_daily.csv"
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", help=f"The model to report on. Defaults to the current day's model: {model_provider.historical_model_name(date.today())}")
 
+LOCAL_FILE_NAME = "report.csv"
+S3_FILE_NAME = "reports/parking_predictions_daily.csv"
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--model", help=f"The model to report on. Defaults to the current day's model: {model_provider.historical_model_name(date.today())}")
+
 def _annotate_predictions(predictions, date, report_time, model):
     for prediction in predictions:
         prediction["time"] = date
