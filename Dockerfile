@@ -14,7 +14,7 @@ RUN apt-get -y install nginx \
     && ACCEPT_EULA=Y apt-get -y install msodbcsql17 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install pipenv
+RUN pip3 install 'pipenv==2018.11.26'
 
 ADD Pipfile* /
 
@@ -24,6 +24,7 @@ RUN pipenv lock --requirements > requirements.txt \
 
 COPY app /app
 RUN chmod +x app/start.sh
+RUN chmod +x app/train.sh
 
 COPY ./tests /tests
 RUN pipenv run pytest /tests \
@@ -31,6 +32,8 @@ RUN pipenv run pytest /tests \
     && pipenv --rm
 
 COPY train.py /
+
+COPY report.py /
 
 COPY nginx.conf /etc/nginx
 

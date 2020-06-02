@@ -20,8 +20,6 @@ from app.util import log_exception
 TTL_HOURS = 12
 TTL_SECONDS = TTL_HOURS * 60 * 60
 
-VAULT_ROLE = environ.get('VAULT_ROLE', '')
-VAULT_CREDENTIALS_KEY = environ.get('VAULT_CREDENTIALS_KEY', '')
 MODEL_FILE_PREFIX = 'mlp_shortnorth_downtown_cluster'
 MODEL_LATEST_PATH = 'models/latest/'
 
@@ -123,7 +121,7 @@ def put_all(models):
 def _model_exists_at_path(bucket, path):
     try:
         logging.debug(f"checking if model exists at {path}")
-        s3 = _s3_resource()
+        s3 = auth_provider.authorized_s3_resource()
         s3.Object(bucket.name, path).load()
         logging.debug(f"done checking model exists at {path}")
         return True
@@ -145,22 +143,11 @@ def _delete_models_in_path(bucket, path):
         bucket.delete_objects(Delete={'Objects': models_to_delete})
 
 
-def _s3_resource():
-    credentials = auth_provider.get_credentials(
-        vault_role=VAULT_ROLE,
-        vault_credentials_key=VAULT_CREDENTIALS_KEY
-    )
-    config = botocore.config.Config(
-        max_pool_connections=50,
-    )
-    session = boto3.Session(**credentials)
-    return session.resource('s3', config=config)
-
-
 def _bucket_for_environment():
-    s3 = _s3_resource()
+    s3 = auth_provider.authorized_s3_resource()
     environment = environ.get('SCOS_ENV', 'dev')
     return s3.Bucket(environment + '-parking-prediction')
+
 
 def get_comparative_models():
     return getenv('COMPARED_MODELS', '12month,18month,24month').split(',')

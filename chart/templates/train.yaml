@@ -6,7 +6,7 @@ metadata:
   labels:
     app: {{ .Chart.Name }}
 spec:
-  schedule: "0 0 * * *"
+  schedule: "0 5 * * *"
   successfulJobsHistoryLimit: 0
   failedJobsHistoryLimit: 3
   jobTemplate:
@@ -19,7 +19,7 @@ spec:
           containers:
           - name: {{ .Chart.Name }}
             image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
-            command: ["python3", "/train.py"]
+            command: ["./train.sh"]
             imagePullPolicy: {{ .Values.image.pullPolicy }}
             env:
             - name: SCOS_ENV
