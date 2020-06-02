@@ -13,9 +13,10 @@ S3_FILE_NAME = "reports/parking_predictions_daily.csv"
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", help=f"The model to report on. Defaults to the current day's model: {model_provider.historical_model_name(date.today())}")
 
-def _annotate_predictions(predictions, date, model):
+def _annotate_predictions(predictions, date, report_time, model):
     for prediction in predictions:
         prediction["time"] = date
+        prediction["report_time"] = report_time
         prediction["model"] = model
 
     return predictions
@@ -46,13 +47,13 @@ if __name__ == "__main__":
     report_run = datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")
 
     with open(LOCAL_FILE_NAME, mode='w') as csv_file:
-        fieldnames = ['zoneId', 'availabilityPrediction', 'time', 'model']
+        fieldnames = ['zoneId', 'availabilityPrediction', 'time', 'report_time', 'model']
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
         while semihour_cursor < window_end:
             semihour_cursor = semihour_cursor + timedelta(minutes=30)
             prediction_output = predictor.predict(semihour_cursor, 'All', model)
-            annotated_predictions = _annotate_predictions(prediction_output, report_run, model)
+            _annotate_predictions(prediction_output, datetime.strftime(semihour_cursor, "%Y-%m-%d %H:%M:%S"), report_run, model)
             if prediction_output:
                 for prediction in prediction_output:
                     writer.writerow(prediction)
