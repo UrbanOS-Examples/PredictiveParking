@@ -31,7 +31,7 @@ class AvailabilityProvider:
   @backoff.on_exception(backoff.expo,
                       Exception,
                       on_backoff=log_exception,
-                      max_value=64)
+                      max_value=60)
   async def handle_websocket_messages(self):
     async with websockets.connect(self.uri) as websocket:
       await websocket.send(JOIN_MESSAGE)
