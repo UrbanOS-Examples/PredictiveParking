@@ -131,10 +131,12 @@ async def test_app_uses_availability_if_its_there(client):
     assert data == [
         {
             'availabilityPrediction': 0.4312,
-            'zoneId': zone_without_availability_data
+            'zoneId': zone_without_availability_data,
+            'supplierID': '970010'
         },
         {
             'availabilityPrediction': 0.75,
-            'zoneId': zone_with_availability_data
+            'zoneId': zone_with_availability_data,
+            'supplierID': '970010'
         },
     ]

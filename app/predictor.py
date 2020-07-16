@@ -21,7 +21,8 @@ def predict_with(models, input_datetime, zone_ids='All'):
     for index in range(len(predictions[lead_model])):
         zone_id = predictions[lead_model][index]["zoneId"]
         zipped_prediction = {
-            "zoneId": zone_id
+            "zoneId": zone_id,
+            'supplierID': '970010'
         }
 
         for model in models:
@@ -81,7 +82,8 @@ def transform_datetime(input_datetime):
 def _as_api_format(zone_id, predicted_val):
   return {
     "zoneId": zone_id,
-    "availabilityPrediction": round(clamp(predicted_val), 4)
+    "availabilityPrediction": round(clamp(predicted_val), 4),
+    "supplierID": "970010"
   }
 
 def clamp(n, minn = 0, maxn = 1):
