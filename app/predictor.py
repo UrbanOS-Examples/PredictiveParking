@@ -81,7 +81,8 @@ def transform_datetime(input_datetime):
 def _as_api_format(zone_id, predicted_val):
   return {
     "zoneId": zone_id,
-    "availabilityPrediction": round(clamp(predicted_val), 4)
+    "availabilityPrediction": round(clamp(predicted_val), 4),
+    "supplierID": "970010"
   }
 
 def clamp(n, minn = 0, maxn = 1):
