@@ -21,8 +21,7 @@ def predict_with(models, input_datetime, zone_ids='All'):
     for index in range(len(predictions[lead_model])):
         zone_id = predictions[lead_model][index]["zoneId"]
         zipped_prediction = {
-            "zoneId": zone_id,
-            'supplierID': '970010'
+            "zoneId": zone_id
         }
 
         for model in models:
