@@ -47,7 +47,7 @@ if __name__ == "__main__":
     report_run = datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")
 
     with open(LOCAL_FILE_NAME, mode='w') as csv_file:
-        fieldnames = ['zoneId', 'availabilityPrediction', 'time', 'report_time', 'model']
+        fieldnames = ['zoneId', 'availabilityPrediction', 'time', 'report_time', 'model', 'supplierID']
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
         while semihour_cursor < window_end:
