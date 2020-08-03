@@ -1,16 +1,20 @@
-from os import getenv
-from quart import Quart, escape, request, jsonify
 import asyncio
+import logging
 from datetime import datetime
+
 from pytz import timezone
-from app import predictor
-from app import now_adjusted
+from quart import Quart
+from quart import jsonify
+from quart import request
+
 from app import model_provider
+from app import now_adjusted
+from app import predictor
 from app import zone_info
 from app.availability_provider import AvailabilityProvider
 
-import logging
-logging.basicConfig(level=logging.INFO)
+LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.INFO)
 
 app = Quart(__name__)
 
@@ -22,22 +26,22 @@ app.availability_provider = AvailabilityProvider(
 
 @app.before_serving
 async def startup():
-    logging.info('starting API')
+    LOGGER.info('starting API')
     app.availability_provider = AvailabilityProvider(
         'wss://streams.smartcolumbusos.com/socket/websocket',
         zone_info.meter_and_zone_list()
     )
     loop = asyncio.get_event_loop()
 
-    logging.info('scheduling availability cache to be filled from stream')
+    LOGGER.info('scheduling availability cache to be filled from stream')
     app.availability_streamer = loop.create_task(app.availability_provider.handle_websocket_messages())
-    logging.info('scheduling model cache to be re-warmed periodically')
+    LOGGER.info('scheduling model cache to be re-warmed periodically')
     app.model_fetcher = loop.create_task(model_provider.fetch_models_periodically())
-    logging.info('finished starting API')
+    LOGGER.info('finished starting API')
 
-    logging.info('warming model cache')
+    LOGGER.info('warming model cache')
     await model_provider.warm_model_caches()
-    logging.info('done warming model cache')
+    LOGGER.info('done warming model cache')
 
 
 @app.after_serving

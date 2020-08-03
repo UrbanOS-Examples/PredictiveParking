@@ -1,6 +1,7 @@
 from dotmap import DotMap
 from functools import partial
 
+
 class FakeVaultClient():
     def __init__(self, aki, sak):
         self.access_key_id = aki
