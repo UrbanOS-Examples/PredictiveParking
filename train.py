@@ -125,9 +125,9 @@ def _sql_read(database_config, sql_query):
 
 def _train_models(occupancy_dataframe):
     zone_cluster = zone_info.zone_cluster()
-   
+
     cleaned_occupancy_dataframe = _remove_unoccupied_timeslots(occupancy_dataframe)
-    
+
     models = {}
 
     for cluster_id in tqdm(zone_info.cluster_ids()):
@@ -136,39 +136,49 @@ def _train_models(occupancy_dataframe):
         zones_in_cluster = zone_cluster[zone_cluster['clusterID'] == cluster_id].zoneID.astype('str').values
         LOGGER.debug(f'Zones in cluster: {zones_in_cluster}')
 
-        occupancy_for_cluster = cleaned_occupancy_dataframe[cleaned_occupancy_dataframe['zone_name'].isin(zones_in_cluster)].reset_index(drop=True)
-        
+        occupancy_for_cluster = cleaned_occupancy_dataframe[
+            cleaned_occupancy_dataframe['zone_name'].isin(zones_in_cluster)
+        ].reset_index(drop=True)
+
         if occupancy_for_cluster.empty:
             LOGGER.info(f'No data available for {cluster_id}, not creating model')
             continue
-        
-        occupancy_for_cluster['semihour'] = pd.to_datetime(occupancy_for_cluster['semihour'])
-        occupancy_for_cluster = occupancy_for_cluster.set_index("semihour")
-        occupancy_for_cluster['available_rate'] = 1 - occupancy_for_cluster['occu_cnt_rate']
-        occupancy_for_cluster = occupancy_for_cluster.between_time('08:00', '22:00', include_start = True, include_end = False) 
-        occupancy_for_cluster = occupancy_for_cluster[(occupancy_for_cluster.index.dayofweek != 6)] # exclude sunday
 
-        occupancy_for_cluster['hour'] = list(zip(occupancy_for_cluster.index.hour,occupancy_for_cluster.index.minute))
-        occupancy_for_cluster['hour'] = occupancy_for_cluster.hour.astype('category')
+        occupancy_for_cluster['semihour'] = pd.to_datetime(occupancy_for_cluster['semihour'])
+        occupancy_for_cluster = occupancy_for_cluster.set_index('semihour')
+        occupancy_for_cluster['available_rate'] = 1 - occupancy_for_cluster['occu_cnt_rate']
+        occupancy_for_cluster = occupancy_for_cluster.between_time('08:00', '22:00', include_start=True,
+                                                                   include_end=False)
+        occupancy_for_cluster = occupancy_for_cluster[
+            (occupancy_for_cluster.index.dayofweek != 6)
+        ]
+
+        occupancy_for_cluster['semihour'] = list(
+            zip(occupancy_for_cluster.index.hour, occupancy_for_cluster.index.minute)
+        )
+        occupancy_for_cluster['semihour'] = occupancy_for_cluster.semihour.astype('category')
         occupancy_for_cluster['dayofweek'] = occupancy_for_cluster.index.dayofweek.astype('category')
-        occupancy_for_cluster = occupancy_for_cluster.loc[:,['total_cnt','available_rate','hour','dayofweek']]
-        X = pd.DataFrame(occupancy_for_cluster.loc[:,['hour', 'dayofweek']])
+
+        occupancy_for_cluster = occupancy_for_cluster.loc[
+            :, ['total_cnt', 'available_rate', 'semihour', 'dayofweek']
+        ] # FIXME: Superfluous?
+
+        X = pd.DataFrame(occupancy_for_cluster.loc[:, ['semihour', 'dayofweek']])
         y = pd.DataFrame(occupancy_for_cluster['available_rate'])
-        # one-hot coding
+
         for col in X.select_dtypes(include='category').columns:
-            # drop_first = True removes multi-collinearity
             add_var = pd.get_dummies(X[col], prefix=col, drop_first=True)
-            # Add all the columns to the model data
-            X = pd.concat([X, add_var],1)
-            # Drop the original column that was expanded
+            X = pd.concat([X, add_var], axis='columns')
             X.drop(columns=[col], inplace=True)
         LOGGER.info(f'Total (row, col) counts: {X.shape}')
 
-        # no meter count as feature
-        # from sklearn.model_selection import cross_val_score
-        # from sklearn.preprocessing import MinMaxScaler
-        X_train, X_test, y_train, y_test = train_test_split(X.values, y.values.ravel(), test_size=0.3, random_state=42)
-        # {'identity', 'logistic', 'tanh', 'relu'}
+        X_train, X_test, y_train, y_test = train_test_split(
+            X.values,
+            y.values.ravel(),
+            test_size=0.3,
+            random_state=42
+        )  # FIXME: Fixed random_state in production?
+        # FIXME: Train test split before a CV?
         LOGGER.info(f'Train (row, col) counts: {X_train.shape}')
         LOGGER.info(f'Test (row, col) counts: {X_test.shape}')
 
@@ -184,7 +194,7 @@ def _train_models(occupancy_dataframe):
         LOGGER.info(f'Root Mean Square Error in test {sqrt(mean_squared_error(y_test, y_pred))}')
         LOGGER.info(f'Mean Absolute Error in test {mean_absolute_error(y_test, y_pred)}')
 
-        # FIXME: CV *after* fit?
+        # FIXME: CV after fit?
         # FIXME: Fixed random_state?
         scores = cross_val_score(
             mlp, X.values, y.values.ravel(),
@@ -201,12 +211,22 @@ def _train_models(occupancy_dataframe):
 
 
 def _remove_unoccupied_timeslots(occupancy_dataframe):
-    occupancy_dataframe.loc[occupancy_dataframe["no_data"] == 1, 'occu_min_rate'] = np.nan
-    occupancy_dataframe.loc[occupancy_dataframe["no_data"] == 1, 'occu_cnt_rate'] = np.nan
-    # how many of them are potential missing records (no transaction for one week for the zone), zone got bagged
-    # print(occupancy_dataframe.loc[(occupancy_dataframe["no_trxn_one_week_flg"] == 1) & (occupancy_dataframe["occu_min_rate"].notna())].shape)
-    occupancy_dataframe.loc[(occupancy_dataframe["no_trxn_one_week_flg"] == 1) & (occupancy_dataframe["occu_min_rate"].notna()), 'occu_min_rate'] =  np.nan
-    occupancy_dataframe.loc[(occupancy_dataframe["no_trxn_one_week_flg"] == 1) & (occupancy_dataframe["occu_cnt_rate"].notna()), 'occu_cnt_rate'] =  np.nan
+    occupancy_dataframe.loc[occupancy_dataframe['no_data'] == 1, 'occu_min_rate'] = np.nan
+    occupancy_dataframe.loc[occupancy_dataframe['no_data'] == 1, 'occu_cnt_rate'] = np.nan
+    occupancy_dataframe.loc[
+        (
+            (occupancy_dataframe['no_trxn_one_week_flg'] == 1)
+            & occupancy_dataframe['occu_min_rate'].notna()
+        ),
+        'occu_min_rate'
+    ] = np.nan
+    occupancy_dataframe.loc[
+        (
+            (occupancy_dataframe['no_trxn_one_week_flg'] == 1)
+            & occupancy_dataframe['occu_cnt_rate'].notna()
+        ),
+        'occu_cnt_rate'
+    ] = np.nan
     return occupancy_dataframe.dropna(subset=['occu_cnt_rate'])
 
 
