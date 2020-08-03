@@ -1,15 +1,24 @@
+import asyncio
+import logging
+from os import environ
+from os import path
+from os import walk
+
+import boto3
 import pytest
+from moto import mock_s3
 
 from app import app
 from app import model_provider
 
-from os import path, walk, environ
-from moto import mock_s3
-import boto3
-import pandas as pd
-
-import logging
 logging.getLogger('botocore').setLevel(logging.WARN)
+
+
+@pytest.yield_fixture(scope='session')
+def event_loop(request):
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope='module')
@@ -36,12 +45,12 @@ def fake_model_files_in_s3():
         base_dir = path.dirname(path.abspath(__file__))
         fixture_dir = path.join(base_dir, 'fixtures')
 
-        for (directory, _, filenames) in walk(fixture_dir):
+        for directory, _, filenames in walk(fixture_dir):
             for filename in filenames:
                 file_path = path.join(directory, filename)
-                bucket.upload_file(file_path, '/models/latest/' + filename)
-                bucket.upload_file(file_path, '/models/12month/' + filename)
-                bucket.upload_file(file_path, '/models/18month/' + filename)
-                bucket.upload_file(file_path, '/models/24month/' + filename)
+                bucket.upload_file(file_path, f'/models/latest/{filename}')
+                bucket.upload_file(file_path, f'/models/12month/{filename}')
+                bucket.upload_file(file_path, f'/models/18month/{filename}')
+                bucket.upload_file(file_path, f'/models/24month/{filename}')
 
         yield
