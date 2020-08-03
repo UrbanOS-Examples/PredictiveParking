@@ -1,18 +1,20 @@
 # PredictiveParking
 This is a project to predict parking meter availability for ParkMobile.
-- Environment: Python3
-- Dependencies/libaries: scikit-learn 0.22.1, numpy 1.18.1, pandas 0.23.4, pyodbc 4.0.28
-```bash
-pip3 install pipenv
-pipenv install --dev
-```
+
+- Environment: Python 3.8
+- Dependencies are captured in the project's [`Pipfile`](Pipfile).
+
 - How to run a prediction:
 
-	$ pipenv ./cli.py
+    ```bash
+    pipenv run ./cli.py
+    ```
+ 
+	or
 
-	OR
-
-	$ pipenv ./cli.py 2020 1 17 9 52
+    ```bash
+    pipenv run ./cli.py 2020 1 17 9 52
+    ```
 
 - In each folder,<br/>
 
@@ -20,21 +22,30 @@ pipenv install --dev
 	/models	 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; current model files <br/>
 	/output	 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; the output of test.py results <br/>
 
-# Local development
-## Install dependencies
+## Local development
+### Environment Setup
+#### Install Python dependencies
 ```bash
 pip3 install pipenv
 pipenv install --dev
 ```
 
-## Running the application local
+#### Install MicroSoft ODBC Driver 17 for SQL Server
+On macOS, this can be done using Homebrew as follows:
+```bash
+brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
+brew update
+HOMEBREW_NO_ENV_FILTERING=1 ACCEPT_EULA=Y brew install msodbcsql17 mssql-tools
+```
+
+### Running the application locally
 ```bash
 export QUART_APP=app:app
 export QUART_DEBUG=true # if you want debug messages on slow calls, etc.
 pipenv run quart run
 ```
 
-## Running tests
+### Running tests
 ```bash
 pipenv run pytest
 ```
