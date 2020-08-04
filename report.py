@@ -1,17 +1,27 @@
 #!/usr/bin/env python3
-### this is to test the model
-from datetime import datetime, date, timedelta
-from os import environ
-import sys
-import csv
-from app import predictor, model_provider, auth_provider
+"""
+Generate a report in S3 consisting of a given model's parking availability
+predictions for all parking zones in Columbus, at all times of day, for thirty
+days before and after today's date.
+"""
 import argparse
+import csv
+from datetime import date
+from datetime import datetime
+from datetime import timedelta
+from os import environ
+
+from app import auth_provider
+from app import model_provider
+from app import predictor
+
 
 LOCAL_FILE_NAME = "report.csv"
 S3_FILE_NAME = "reports/parking_predictions_daily.csv"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", help=f"The model to report on. Defaults to the current day's model: {model_provider.historical_model_name(date.today())}")
+
 
 def _annotate_predictions(predictions, date, report_time, model):
     for prediction in predictions:
