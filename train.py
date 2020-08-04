@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
-from math import sqrt
 from pathlib import Path
 
 import numpy as np
@@ -18,11 +17,6 @@ from prometheus_client import CollectorRegistry
 from prometheus_client import Gauge
 from prometheus_client import push_to_gateway
 from pytz import timezone
-from sklearn.metrics import mean_absolute_error
-from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import KFold
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPRegressor
 from tqdm import tqdm
 
@@ -154,17 +148,16 @@ def _train_models(occupancy_dataframe):
         ]
 
         occupancy_for_cluster['semihour'] = list(
-            zip(occupancy_for_cluster.index.hour, occupancy_for_cluster.index.minute)
+            zip(
+                occupancy_for_cluster.index.hour,
+                occupancy_for_cluster.index.minute
+            )
         )
         occupancy_for_cluster['semihour'] = occupancy_for_cluster.semihour.astype('category')
         occupancy_for_cluster['dayofweek'] = occupancy_for_cluster.index.dayofweek.astype('category')
 
-        occupancy_for_cluster = occupancy_for_cluster.loc[
-            :, ['total_cnt', 'available_rate', 'semihour', 'dayofweek']
-        ] # FIXME: Superfluous?
-
         X = pd.DataFrame(occupancy_for_cluster.loc[:, ['semihour', 'dayofweek']])
-        y = pd.DataFrame(occupancy_for_cluster['available_rate'])
+        y = occupancy_for_cluster.available_rate
 
         for col in X.select_dtypes(include='category').columns:
             add_var = pd.get_dummies(X[col], prefix=col, drop_first=True)
@@ -172,36 +165,8 @@ def _train_models(occupancy_dataframe):
             X.drop(columns=[col], inplace=True)
         LOGGER.info(f'Total (row, col) counts: {X.shape}')
 
-        X_train, X_test, y_train, y_test = train_test_split(
-            X.values,
-            y.values.ravel(),
-            test_size=0.3,
-            random_state=42
-        )  # FIXME: Fixed random_state in production?
-        # FIXME: Train test split before a CV?
-        LOGGER.info(f'Train (row, col) counts: {X_train.shape}')
-        LOGGER.info(f'Test (row, col) counts: {X_test.shape}')
-
-        mlp = MLPRegressor(
-            hidden_layer_sizes=(50, 50),
-            activation='relu',
-            validation_fraction=0.3
-        )
-
-        mlp.fit(X_train, y_train)
-        y_pred = mlp.predict(X_test)
-        LOGGER.info(f'Root Mean Square Error in train {sqrt(mean_squared_error(y_train, mlp.predict(X_train)))}')
-        LOGGER.info(f'Root Mean Square Error in test {sqrt(mean_squared_error(y_test, y_pred))}')
-        LOGGER.info(f'Mean Absolute Error in test {mean_absolute_error(y_test, y_pred)}')
-
-        # FIXME: CV after fit?
-        # FIXME: Fixed random_state?
-        scores = cross_val_score(
-            mlp, X.values, y.values.ravel(),
-            cv=KFold(n_splits=5, shuffle=True, random_state=42)
-        )
-        LOGGER.info(f'Each time scores are {scores}')
-        LOGGER.info(f'Average score is {sum(scores) / len(scores)}')
+        mlp = MLPRegressor(hidden_layer_sizes=(50, 50), activation='relu')
+        mlp.fit(X, y)
 
         models[str(int(cluster_id))] = mlp
 
