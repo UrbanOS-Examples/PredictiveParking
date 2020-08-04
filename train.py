@@ -3,7 +3,8 @@ import configparser
 import getpass
 import logging
 import os
-from dataclasses import dataclass, InitVar
+from dataclasses import InitVar
+from dataclasses import dataclass
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
@@ -23,6 +24,7 @@ from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPRegressor
+from tqdm import tqdm
 
 from app import model_provider
 from app import now_adjusted
@@ -131,7 +133,7 @@ def _train_models(occupancy_dataframe):
     
     models = {}
 
-    for cluster_id in zone_info.cluster_ids():
+    for cluster_id in tqdm(zone_info.cluster_ids()):
         LOGGER.info(f'Processing cluster ID {cluster_id}')
 
         zones_in_cluster = zone_cluster[zone_cluster['clusterID'] == cluster_id].zoneID.astype('str').values
