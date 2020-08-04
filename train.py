@@ -31,9 +31,27 @@ from app import now_adjusted
 from app import predictor
 from app import zone_info
 
-DIRNAME = path.dirname(path.abspath(__file__))
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
+
+DIRNAME = Path(__file__).parent.absolute()
+
+
+@dataclass
+class SqlServerConfig:
+    server: str
+    database: str
+    uid: InitVar[str] = None
+    pwd: InitVar[str] = None
+
+    def __post_init__(self, uid, pwd):
+        if not (uid is None or pwd is None):
+            self.driver = 'ODBC Driver 17 for SQL Server'
+            self.uid = uid
+            self.pwd = pwd
+        else:
+            self.driver = 'SQL Server Native Client 11.0'
+            self.trusted_connection = self.mars_connection = 'yes'
 
 
 def main():
@@ -42,44 +60,43 @@ def main():
     occupancy_dataframe = _get_occupancy_data_from_database(database_config)
 
     models = _train_models(occupancy_dataframe)
-        
+
     model_provider.put_all(models)
 
     _validate_variance()
 
 
 def _get_database_config():
-    configParser = configparser.RawConfigParser()
-    configParser.read(path.join(DIRNAME, 'app/train.config'))
-    
-    environment = os.getenv('SCOS_ENV') or 'dev'
-    url = os.getenv('SQL_SERVER_URL') or configParser.get(environment, 'mssql_url')
-    database = os.getenv('SQL_SERVER_DATABASE') or configParser.get(environment, 'mssql_db_name')
-    username = os.getenv('SQL_SERVER_USERNAME') or configParser.get(environment, 'mssql_db_user')
+    config_parser = configparser.RawConfigParser()
+    config_parser.read(DIRNAME / 'app/train.config')
+
+    environment = os.getenv('SCOS_ENV', default='dev')
+    url = os.getenv('SQL_SERVER_URL',
+                    default=config_parser.get(environment, 'mssql_url'))
+    database = os.getenv('SQL_SERVER_DATABASE',
+                         default=config_parser.get(environment, 'mssql_db_name'))
+    username = os.getenv('SQL_SERVER_USERNAME',
+                         default=config_parser.get(environment, 'mssql_db_user'))
     password = os.getenv('SQL_SERVER_PASSWORD')
-    
-    if password == None:
+    if password is None:
         password = getpass.getpass()
 
     return SqlServerConfig(url, database, username, password)
 
 
 def _get_occupancy_data_from_database(database_config):
-    sql_query = "SELECT [zone_name] \
-                ,[semihour] \
-                ,[occu_min] \
-                ,[occu_mtr_cnt] \
-                ,[no_trxn_one_day_flg] \
-                ,[no_trxn_one_week_flg] \
-                ,[total_cnt] \
-                ,[occu_min_rate] \
-                ,[occu_cnt_rate] \
-                ,[city_holiday] \
-                ,[shortnorth_event] \
-                ,[no_data] \
-                FROM [dbo].[parking_zone_occupancy_aggr] \
-                where CONVERT(date, semihour) >= CONVERT(date, DATEADD(month, -18, GETUTCDATE()))\
-                order by zone_name, semihour"
+    sql_query = '''
+        SELECT
+            [zone_name], [semihour], [occu_min], [occu_mtr_cnt],
+            [no_trxn_one_day_flg], [no_trxn_one_week_flg],
+            [total_cnt],
+            [occu_min_rate], [occu_cnt_rate],
+            [city_holiday], [shortnorth_event],
+            [no_data]
+        FROM [dbo].[parking_zone_occupancy_aggr]
+        WHERE CONVERT(date, semihour) >= CONVERT(date, DATEADD(month, -18, GETUTCDATE()))
+        ORDER BY zone_name, semihour
+    '''
 
     try:
         occupancy_dataframe = _sql_read(database_config, sql_query)
@@ -99,31 +116,11 @@ def _get_occupancy_data_from_database(database_config):
 
 
 def _sql_read(database_config, sql_query):
-
-    if database_config.username is not None and database_config.password is not None:
-        conn_specs = ';'.join([
-            'Driver={ODBC Driver 17 for SQL Server}',
-            'Server=' + database_config.url, 
-            'Database=' + database_config.database,
-            'UID=' + database_config.username,
-            'PWD=' + database_config.password
-        ])
-    else:
-        conn_specs = ';'.join([
-            'Driver={SQL Server Native Client 11.0}',
-            'Server=' + database_config.url,
-            'Database=' + database_config.database,
-            'Trusted_Connection=yes',
-            'MARS_Connection=yes'
-        ])
     LOGGER.info(f'Reading data from DB {database_config.server}')
     LOGGER.debug('Performing DB read with spec of %s', database_config.__dict__)
 
-
-    with pyodbc.connect(conn_specs) as conn:
-        dataframe = pd.read_sql_query(sql_query, conn)
-    
-    return dataframe
+    with pyodbc.connect(**database_config.__dict__) as conn:
+        return pd.read_sql_query(sql_query, conn)
 
 
 def _train_models(occupancy_dataframe):
@@ -213,14 +210,6 @@ def _remove_unoccupied_timeslots(occupancy_dataframe):
     return occupancy_dataframe.dropna(subset=['occu_cnt_rate'])
 
 
-@dataclass
-class SqlServerConfig:
-    url: str
-    database: str
-    username: str = None
-    password: str = None
-
-
 def _validate_variance():
     yesterday_model = model_provider.historical_model_name(date.today() - timedelta(1))
     today_model = model_provider.historical_model_name(date.today())
@@ -253,5 +242,5 @@ def _validate_variance():
     )
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
