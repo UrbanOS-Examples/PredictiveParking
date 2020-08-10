@@ -23,6 +23,7 @@ def get_credentials(vault_role, vault_credentials_key, vault_url=DEFAULT_VAULT_U
   
   return {}
 
+
 def authorized_s3_resource():
     credentials = get_credentials(
         vault_role=VAULT_ROLE,

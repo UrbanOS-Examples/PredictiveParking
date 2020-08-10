@@ -1,12 +1,13 @@
-from app import model_provider
-import pytest
-import boto3
-import botocore
 import pickle
-from os import path, walk
-from moto import mock_s3
+
+import boto3
+import pytest
 from freezegun import freeze_time
-from mockito import when, mock, any, verify, patch, unstub, kwargs
+from mockito import kwargs
+from mockito import when
+from moto import mock_s3
+
+from app import model_provider
 
 
 @pytest.fixture(scope='module')
@@ -34,11 +35,11 @@ def test_train_writes_models_to_s3(setup_all):
         '2': 'model 2'
     }
 
-    with freeze_time("2020-01-14 14:00:00"):
+    with freeze_time('2020-01-14 14:00:00'):
         model_provider.put_all(models)
     
-    latest_content = list(bucket.objects.filter(Prefix="models/latest/"))
-    dated_content = list(bucket.objects.filter(Prefix="models/historical/2020-01/2020-01-14/"))
+    latest_content = list(bucket.objects.filter(Prefix='models/latest/'))
+    dated_content = list(bucket.objects.filter(Prefix='models/historical/2020-01/2020-01-14/'))
 
     assert len(latest_content) == 2
     assert len(dated_content) == 2
@@ -52,7 +53,7 @@ def test_read_and_update_model(setup_all):
         '2': 'model 2'
     }
 
-    with freeze_time("2020-01-14 14:00:00"):
+    with freeze_time('2020-01-14 14:00:00'):
         model_provider.put_all(models)
 
     assert get_latest_model() == 'model 1'
@@ -61,18 +62,18 @@ def test_read_and_update_model(setup_all):
         '1': 'updated model 1'
     }
 
-    with freeze_time("2020-01-15 14:00:00"):
+    with freeze_time('2020-01-15 14:00:00'):
         model_provider.put_all(models)
 
     assert get_latest_model() == 'updated model 1'
-    assert 1 == len(list(bucket.objects.filter(Prefix="models/latest/")))
+    assert 1 == len(list(bucket.objects.filter(Prefix='models/latest/')))
 
 
 def get_latest_model():
     conn = boto3.resource('s3')
     bucket = conn.Bucket('dev-parking-prediction')
     
-    latest_content = list(bucket.objects.filter(Prefix="models/latest/"))
+    latest_content = list(bucket.objects.filter(Prefix='models/latest/'))
 
     object = conn.Object('dev-parking-prediction', latest_content[0].key)
 

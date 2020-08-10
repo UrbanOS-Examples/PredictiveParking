@@ -1,4 +1,8 @@
-# This module handles the edge cases where parking can be paid for before parking opens up to a half hour in advance
+"""
+This module handles the edge cases where parking can be paid for before parking
+opens up to a half hour in advance.
+"""
+
 
 def adjust(now):
     today8am = now.replace(hour=8, minute=0, second=0, microsecond=0)

@@ -1,13 +1,13 @@
-from app import auth_provider
-import pytest
-from mockito import when, any
+import builtins
+from io import StringIO
+from os import path
 
 import hvac
-from tests.fake_vault import FakeVaultClient
+from mockito import any
+from mockito import when
 
-import builtins
-from os import path
-from io import StringIO
+from app import auth_provider
+from tests.fake_vault import FakeVaultClient
 
 
 def test_get_credentials_returns_dictionary_with_id_and_key():
