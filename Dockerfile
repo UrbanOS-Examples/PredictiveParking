@@ -30,8 +30,8 @@ FROM base-python as test
 COPY ./tests /tests
 RUN apt-get -y update \
     && apt-get -y install libspatialindex-dev \
-    && poetry install \
-    && poetry run pytest /tests
+    && poetry install
+RUN poetry run pytest /tests
 
 
 FROM base-python as production
