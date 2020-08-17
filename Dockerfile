@@ -1,4 +1,4 @@
-FROM python:3.8
+FROM python:3.8 as base-python
 
 RUN apt-get clean \
     && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
@@ -14,26 +14,28 @@ RUN apt-get -y install nginx \
     && ACCEPT_EULA=Y apt-get -y install msodbcsql17 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install 'pipenv==2018.11.26'
+RUN pip3 install 'poetry==1.0.9'
 
-ADD Pipfile* /
+ADD pyproject.toml poetry.lock /
 
-RUN pipenv lock --requirements > requirements.txt \
-    && pip3 install --requirement requirements.txt \
-    && pipenv install --dev
+RUN poetry export -f requirements.txt -o requirements.txt \
+    && pip3 install --requirement requirements.txt
 
 COPY app /app
 RUN chmod +x app/start.sh
 RUN chmod +x app/train.sh
 
+
+FROM base-python as test
 COPY ./tests /tests
-RUN pipenv run pytest /tests \
-    && rm -rf /tests \
-    && pipenv --rm
+RUN apt-get -y update \
+    && apt-get -y install libspatialindex-dev \
+    && poetry install \
+    && poetry run pytest /tests
 
-COPY train.py /
 
-COPY report.py /
+FROM base-python as production
+COPY train.py report.py /
 
 COPY nginx.conf /etc/nginx
 

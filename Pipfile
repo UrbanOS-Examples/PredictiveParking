@@ -29,6 +29,7 @@ requests = "*"
 backoff = "*"
 prometheus-client = "*"
 tqdm = "*"
+notebook = "*"
 
 [requires]
 python_version = "3.8"
