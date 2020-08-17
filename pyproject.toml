@@ -15,15 +15,13 @@ hvac = "^0.10.1"
 boto3 = "^1.12.48"
 pyodbc = "^4.0.30"
 cachetools = "^4.1.0"
-asyncio = "^3.4.3"
 quart = "^0.13.0"
 websockets = "^8.1"
 python-dateutil = "^2.8.1"
 requests = "^2.24.0"
 backoff = "^1.10.0"
 prometheus-client = "^0.8.0"
-matplotlib = "^3.3.1"
-colorcet = "^2.0.2"
+pytest-mockito = "^0.0.4"
 
 [tool.poetry.dev-dependencies]
 dotmap = "^1.3.14"
@@ -41,6 +39,8 @@ geopandas = "^0.8.1"
 shapely = "^1.7.0"
 networkx = "^2.4"
 osmnx = "^0.15.1"
+matplotlib = "^3.3.1"
+colorcet = "^2.0.2"
 
 [build-system]
 requires = ["poetry>=0.12"]

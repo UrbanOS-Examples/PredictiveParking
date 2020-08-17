@@ -12,16 +12,16 @@ VAULT_CREDENTIALS_KEY = environ.get('VAULT_CREDENTIALS_KEY', '')
 
 @cached(cache=LRUCache(maxsize=128))
 def get_credentials(vault_role, vault_credentials_key, vault_url=DEFAULT_VAULT_URL, token_file_path=DEFAULT_TOKEN_FILE_PATH):
-  if path.isfile(token_file_path):
-    client = hvac.Client(vault_url)
-    f = open(token_file_path)
-    jwt = f.read()
-    client.auth_kubernetes(vault_role, jwt)
-    response = client.secrets.kv.v1.read_secret(f"smart_city/aws_keys/{vault_credentials_key}", mount_point="secrets")
+    if path.isfile(token_file_path):
+        client = hvac.Client(vault_url)
+        f = open(token_file_path)
+        jwt = f.read()
+        client.auth_kubernetes(vault_role, jwt)
+        response = client.secrets.kv.v1.read_secret(f"smart_city/aws_keys/{vault_credentials_key}", mount_point="secrets")
 
-    return response['data']
-  
-  return {}
+        return response['data']
+    else:
+        return {}
 
 
 def authorized_s3_resource():

@@ -4,7 +4,6 @@ import boto3
 import pytest
 from freezegun import freeze_time
 from mockito import kwargs
-from mockito import when
 from moto import mock_s3
 
 from app import model_provider
@@ -21,10 +20,10 @@ def setup_all():
 
 
 @pytest.mark.asyncio
-async def test_warm_is_resilient(fake_model_files_in_s3):
+async def test_warm_is_resilient(when, fake_model_files_in_s3):
     actual_boto3_session = boto3.Session()
-    with when(boto3).Session(**kwargs).thenRaise(Exception('this should not crash things')).thenReturn(actual_boto3_session):
-        await model_provider.warm_model_caches()
+    when(boto3).Session(**kwargs).thenRaise(Exception('this should not crash things')).thenReturn(actual_boto3_session)
+    await model_provider.warm_model_caches()
 
 
 def test_train_writes_models_to_s3(setup_all):
