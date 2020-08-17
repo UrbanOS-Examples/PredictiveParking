@@ -1,0 +1,47 @@
+[tool.poetry]
+name = "predictive-parking"
+version = "0.11.1"
+description = "Predicting parking meter availability for ParkColumbus"
+authors = ["Dan Moore <daniel.r.moore@accenture.com>"]
+
+classifiers = ["Private :: Not for PyPI"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+scikit-learn = "0.22.1"
+numpy = "^1.18.1"
+pandas = "^1.0"
+hvac = "^0.10.1"
+boto3 = "^1.12.48"
+pyodbc = "^4.0.30"
+cachetools = "^4.1.0"
+quart = "^0.13.0"
+websockets = "^8.1"
+python-dateutil = "^2.8.1"
+requests = "^2.24.0"
+backoff = "^1.10.0"
+prometheus-client = "^0.8.0"
+pytest-mockito = "^0.0.4"
+
+[tool.poetry.dev-dependencies]
+dotmap = "^1.3.14"
+pytest = "^6.0.1"
+mockito = "^1.2.1"
+freezegun = "^0.3.15"
+tqdm = "^4.48.2"
+ipython = "^7.17.0"
+notebook = "^6.1.3"
+pylint = "^2.5.3"
+pytest-asyncio = "^0.14.0"
+moto = "^1.3.14"
+GitPython = "^3.1.7"
+geopandas = "^0.8.1"
+shapely = "^1.7.0"
+networkx = "^2.4"
+osmnx = "^0.15.1"
+matplotlib = "^3.3.1"
+colorcet = "^2.0.2"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
