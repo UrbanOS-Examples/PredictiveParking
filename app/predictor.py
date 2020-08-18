@@ -122,10 +122,6 @@ def predict_as_api_format(index):
 def _as_api_format(zone_id, predicted_val):
     return {
         'zoneId': zone_id,
-        'availabilityPrediction': round(clamp(predicted_val), 4),
+        'availabilityPrediction': round(np.clip(predicted_val, 0, 1), 4),
         'supplierID': '970010'
     }
-
-
-def clamp(n, minn=0, maxn=1):
-    return max(min(maxn, n), minn)
