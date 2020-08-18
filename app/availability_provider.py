@@ -27,10 +27,8 @@ class AvailabilityProvider:
         self.zone_index = zone_index
         self.meter_index = meter_index
 
-
-    @backoff.on_exception(backoff.expo, Exception,
-                          on_backoff=log_exception,
-                          max_value=60)
+    @backoff.on_exception(
+        backoff.expo, Exception, on_backoff=log_exception, max_value=60)
     async def handle_websocket_messages(self):
         async with websockets.connect(self.uri) as websocket:
             await websocket.send(JOIN_MESSAGE)
@@ -49,7 +47,7 @@ class AvailabilityProvider:
 
         for zone_id in zone_index:
             availability = availability_tracker.availability(zone_index, zone_id, now)
-            if availability != None:
+            if availability is not None:
                 availabilities[zone_id] = availability
 
         return availabilities

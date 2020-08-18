@@ -1,7 +1,9 @@
 import datetime
+from collections import defaultdict
 from copy import deepcopy
 from functools import reduce
 from itertools import starmap
+from operator import itemgetter
 
 from dateutil import parser
 from dateutil import tz
@@ -60,35 +62,15 @@ def create_message_handler(meter_index):
     return _handler
 
 
-def _extract_meter_mapping(index, meter_row):
-    meter_id = meter_row['meter_id']
-    zone_id = meter_row['zone_id']
-
-    index[meter_id] = zone_id
-
-    return index
-
-
-def _extract_zone_mappings(index, meter_row):
-    meter_id = meter_row['meter_id']
-    zone_id = meter_row['zone_id']
-
-    current_zone = index.get(zone_id, {'meters': {}})
-    current_zone_meters = current_zone.get('meters')
-
-    current_zone_meters[meter_id] = {
-        'occupied': None,
-        'last_seen': None
-    }
-
-    current_zone['meters'] = current_zone_meters
-    index[zone_id] = current_zone
-
-    return index
-
-
 def create_tracking_indices(meter_and_zone_list):
-    meter_index = reduce(_extract_meter_mapping, meter_and_zone_list, {})
-    zone_index = reduce(_extract_zone_mappings, meter_and_zone_list, {})
+    meter_index = {meter['meter_id']: meter['zone_id']
+                   for meter in meter_and_zone_list}
 
-    return (zone_index, meter_index)
+    zone_index = defaultdict(lambda: {'meters': {}})
+    default_meter_status = {'occupied': None, 'last_seen': None}
+
+    get_zone_and_meter_ids = itemgetter('zone_id', 'meter_id')
+    for zone_id, meter_id in map(get_zone_and_meter_ids, meter_and_zone_list):
+        zone_index[zone_id]['meters'][meter_id] = default_meter_status
+
+    return zone_index, meter_index
