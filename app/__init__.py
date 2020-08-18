@@ -64,21 +64,25 @@ async def predictions():
     else:
         zone_ids = 'All'
 
-    prediction_index = predictor.predict_as_index(now, zone_ids)
-    availability_index = app.availability_provider.get_all_availability()
+    availability = predictor.predict_as_index(now, zone_ids)
 
-    predictions_and_availability = _merge_existing(prediction_index, availability_index)
-    predictions_and_availability_formatted = predictor.predict_as_api_format(predictions_and_availability)
+    prediction_transforms = [
+        _override_availability_predictions_with_known_values,
+        predictor.predict_as_api_format,
+        jsonify
+    ]
+    for transform in prediction_transforms:
+        availability = transform(availability)
 
-    return jsonify(predictions_and_availability_formatted)
+    return availability
 
 
-def _merge_existing(updatee, updator):
-    for key, value in updator.items():
-        if key in updatee:
-            updatee[key] = value
+def _override_availability_predictions_with_known_values(predictions):
+    sensor_data = app.availability_provider.get_all_availability()
 
-    return updatee
+    for key in predictions.keys() & sensor_data.keys():
+        predictions[key] = sensor_data[key]
+    return predictions
 
 
 @app.route('/api/v0/predictions')
