@@ -53,7 +53,8 @@ def _get_meter_and_zone_list_from_api():
         SELECT
             id AS meter_id,
             subareaname AS zone_id
-        FROM padded_fybr_meter_ids f JOIN padded_meter_ids i ON f.meter_id = i.meter_id
+        FROM padded_meter_ids ips JOIN padded_fybr_meter_ids fybr
+            ON ips.meter_id = fybr.meter_id
     '''
     with requests.post(DISCOVERY_API_QUERY_URL, stream=True, params={'_format': 'json'}, data=METER_TO_ZONE_LIST_QUERY) as r:
         r.raise_for_status()
