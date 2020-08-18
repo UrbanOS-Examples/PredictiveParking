@@ -46,8 +46,8 @@ async def startup():
 
 @app.after_serving
 async def shutdown():
-    app.model_fetcher.cancel()
     app.availability_streamer.cancel()
+    app.model_fetcher.cancel()
 
 
 @app.route('/healthcheck')
