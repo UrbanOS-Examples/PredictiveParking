@@ -38,9 +38,7 @@ def historical_model_name(model_date):
     return f'historical/{model_date.strftime("%Y-%m")}/{model_date.isoformat()}'
 
 
-@backoff.on_exception(backoff.expo,
-                      Exception,
-                      on_backoff=log_exception)
+@backoff.on_exception(backoff.expo, Exception, on_backoff=log_exception)
 async def warm_model_caches(extra_models=[]):
     models = get_comparative_models() + extra_models
     model_fetches = [_fetch_all('latest')]

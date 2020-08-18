@@ -27,7 +27,33 @@ def predict_with(models, input_datetime, zone_ids='All'):
     return zipped_predictions
 
 
-def predict(input_datetime, zone_ids='All', model='latest'):  
+def predict(input_datetime, zone_ids='All', model='latest'):
+    """
+    Predict the availability of parking in a list of parking zones at a given
+    time, returning a list of predictions in the current prediction API format.
+
+    Parameters
+    ----------
+    input_datetime : datetime.datetime
+        The date and time at which parking meter availability should be
+        predicted.
+    zone_ids : str or collection of hashable, optional
+        The parking zones where availability estimates are being requested. The
+        default is 'All', which will result in availability predictions for all
+        parking zones.
+    model : str, optional
+        The identifier of the model parameters to use (default: 'latest').
+
+    Returns
+    -------
+    list of dict of {str : str or float}
+        The predictions for each of the `zone_ids` converted to the current
+        prediction API format.
+
+    See Also
+    --------
+    _as_api_format : Defines the current prediction API format
+    """
     index = predict_as_index(input_datetime, zone_ids, model)
 
     return predict_as_api_format(index)
@@ -51,13 +77,13 @@ def predict_as_index(input_datetime, zone_ids='All', model='latest'):
 
     Returns
     -------
-    dict
+    dict of {str : float}
         A mapping of zone IDs to their predicted parking availability values.
         Parking availability is expressed as a ratio of available parking spots
         to total parking spots in each zone, represented as a float between 0
         and 1.
     """
-    if not is_valid_input_datetime(input_datetime):
+    if not during_hours_of_operation(input_datetime):
         return {}
 
     model_inputs = extract_features(input_datetime)
@@ -84,7 +110,7 @@ def predict_as_index(input_datetime, zone_ids='All', model='latest'):
     return prediction_index
 
 
-def is_valid_input_datetime(input_datetime):
+def during_hours_of_operation(input_datetime):
     return input_datetime.weekday() < 6 and 8 <= input_datetime.hour < 22
 
 
@@ -115,8 +141,27 @@ def extract_features(input_datetime):
     return semihour_input[1:] + day_input[1:]
 
 
-def predict_as_api_format(index):
-    return list(starmap(_as_api_format, index.items()))
+def predict_as_api_format(indexed_predictions):
+    """
+    Transform a dictionary of predictions into a list of outputs in API format.
+
+    Parameters
+    ----------
+    indexed_predictions : dict of {str : float}
+        A dictionary of `parking zone id -> availability prediction` pairs.
+
+    Returns
+    -------
+    list of dict of {str : str or float}
+        The predictions in `indexed_predictions` converted to the current
+        prediction API format.
+
+    See Also
+    --------
+    predict_as_index : Predict parking availability given feature lists
+    _as_api_format : Defines the current prediction API format
+    """
+    return list(starmap(_as_api_format, indexed_predictions.items()))
 
 
 def _as_api_format(zone_id, predicted_val):
