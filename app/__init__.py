@@ -1,6 +1,8 @@
 import asyncio
 import logging
 from datetime import datetime
+from typing import List
+from typing import Union
 
 from pytz import timezone
 from quart import Quart
@@ -58,11 +60,7 @@ async def healthcheck():
 @app.route('/api/v1/predictions')
 async def predictions():
     now = now_adjusted.adjust(datetime.now(timezone('US/Eastern')))
-    zoneParam = request.args.get('zone_ids')
-    if zoneParam != None:
-        zone_ids = zoneParam.split(',')
-    else:
-        zone_ids = 'All'
+    zone_ids = _parse_zone_ids(request.args.get('zone_ids'))
 
     availability = predictor.predict_as_index(now, zone_ids)
 
@@ -77,6 +75,14 @@ async def predictions():
     return availability
 
 
+def _parse_zone_ids(request_zone_ids_field) -> Union[List[str], str]:
+    if (zone_param := request_zone_ids_field) is not None:
+        zone_ids = zone_param.split(',')
+    else:
+        zone_ids = 'All'
+    return zone_ids
+
+
 def _override_availability_predictions_with_known_values(predictions):
     sensor_data = app.availability_provider.get_all_availability()
 
@@ -88,11 +94,7 @@ def _override_availability_predictions_with_known_values(predictions):
 @app.route('/api/v0/predictions')
 async def predictions_comparative():
     now = now_adjusted.adjust(datetime.now(timezone('US/Eastern')))
-    zoneParam = request.args.get('zone_ids')
-    if zoneParam != None:
-        zone_ids = zoneParam.split(',')
-    else:
-        zone_ids = 'All'
+    zone_ids = _parse_zone_ids(request.args.get('zone_ids'))
 
     results = predictor.predict_with(model_provider.get_comparative_models(), now, zone_ids)
     return jsonify(results)
