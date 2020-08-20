@@ -1,9 +1,77 @@
+from abc import ABC
+from abc import abstractmethod
+from datetime import datetime
 from itertools import starmap
+from typing import List
+from typing import Literal
+from typing import Mapping
+from typing import Union
 
 import numpy as np
+from pydantic import BaseModel
+from pydantic import ValidationError
+from pydantic import confloat
+from pydantic import constr
+from pydantic import validate_arguments
+from pydantic import validator
+from sklearn.neural_network import MLPRegressor
 
 from app import model_provider
 from app import zone_info
+
+
+class Predictor(ABC):
+    """An abstract base class for trained predictive models"""
+    @abstractmethod
+    def predict(self, data):
+        ...
+
+
+class ParkingAvailabilityPredictorInput(BaseModel):
+    timestamp: datetime = None
+    zone_ids: List[str] = 'All'
+
+    @validator('timestamp', pre=True, always=True)
+    def use_current_time_if_no_timestamp_is_provided(cls, timestamp):
+        return timestamp if timestamp is not None else datetime.now()
+
+    @validator('zone_ids', pre=True, always=True)
+    def all_zone_ids_are_valid(cls, zone_ids):
+        known_parking_locations = zone_info.zone_ids()
+        if zone_ids == 'All':
+            zone_ids = known_parking_locations
+        else:
+            zone_ids = sorted(
+                set(zone_ids).intersection(known_parking_locations),
+                key=zone_ids.index
+            )
+        return list(zone_ids)
+
+
+class ParkingAvailabilityPredictor(Predictor):
+    def __init__(self, model_tag='latest'):
+        super().__init__()
+        self._location_models: Mapping[str, MLPRegressor] = model_provider.get_all(model_tag)
+
+    @validate_arguments
+    def predict(self, data: ParkingAvailabilityPredictorInput) -> Mapping[str, float]:
+        if not during_hours_of_operation(data.timestamp):
+            return {}
+
+        model_inputs = extract_features(data.timestamp)
+
+        cluster_ids = (zone_info.zone_cluster()
+                                .assign(zoneID=lambda df: df.zoneID.astype(str))
+                                .set_index('zoneID')
+                                .loc[data.zone_ids, 'clusterID']
+                                .map(str)
+                                .tolist())
+
+        return {
+            zone_id: self._location_models[cluster_id]
+                         .predict(np.asarray(model_inputs).reshape(1, -1))[0]
+            for zone_id, cluster_id in zip(data.zone_ids, cluster_ids)
+        }
 
 
 def predict_with(models, input_datetime, zone_ids='All'):
@@ -83,31 +151,10 @@ def predict_as_index(input_datetime, zone_ids='All', model='latest'):
         to total parking spots in each zone, represented as a float between 0
         and 1.
     """
-    if not during_hours_of_operation(input_datetime):
+    try:
+        return ParkingAvailabilityPredictor(model_tag=model).predict({'timestamp': input_datetime, 'zone_ids': zone_ids})
+    except ValidationError:
         return {}
-
-    model_inputs = extract_features(input_datetime)
-    models = model_provider.get_all(model)
-
-    prediction_index = {}
-
-    for _, row in zone_info.zone_cluster().iterrows():
-        zone_id = str(row['zoneID'])
-        if zone_ids != 'All' and zone_id not in zone_ids:
-            continue
-
-        cluster_id = row['clusterID']
-        if not np.isnan(cluster_id):
-            cluster_id = str(int(cluster_id))
-            if cluster_id not in models:
-                continue
-
-            current_model = models[cluster_id]
-            predicted_val = current_model.predict(np.asarray(model_inputs).reshape(1, -1))[0]
-
-            prediction_index[zone_id] = predicted_val
-
-    return prediction_index
 
 
 def during_hours_of_operation(input_datetime):
@@ -147,7 +194,7 @@ def predict_as_api_format(indexed_predictions):
 
     Parameters
     ----------
-    indexed_predictions : dict of {str : float}
+    predictions : dict of {str : float}
         A dictionary of `parking zone id -> availability prediction` pairs.
 
     Returns
@@ -161,7 +208,7 @@ def predict_as_api_format(indexed_predictions):
     predict_as_index : Predict parking availability given feature lists
     _as_api_format : Defines the current prediction API format
     """
-    return list(starmap(_as_api_format, indexed_predictions.items()))
+    return list(starmap(_as_api_format, predictions.items()))
 
 
 def _as_api_format(zone_id, predicted_val):

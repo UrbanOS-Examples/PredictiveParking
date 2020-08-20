@@ -22,6 +22,10 @@ def zone_cluster():
     return ZONE_CLUSTER
 
 
+def zone_ids():
+    return ZONE_CLUSTER.zoneID.map(str).tolist()
+
+
 def meter_and_zone_list():
     return _get_meter_and_zone_list_from_api()
 
