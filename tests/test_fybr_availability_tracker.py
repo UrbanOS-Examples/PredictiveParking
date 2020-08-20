@@ -1,4 +1,4 @@
-from app import availability_tracker
+from app import fybr_availability_tracker
 from tests.util import as_ts
 
 
@@ -47,7 +47,7 @@ def test_handler_reduces_applicable_messages_into_index():
         {'event': 'update', 'payload': {'id': '9863', 'limit': 'no-limit', 'occupancy': 'UNOCCUPIED', 'time_of_ingest': '2020-05-21T18:01:00.037202'}}
     ]
 
-    message_handler = availability_tracker.create_message_handler(meter_index)
+    message_handler = fybr_availability_tracker.create_message_handler(meter_index)
 
     zone_index = message_handler(messages, zone_index)
 
@@ -133,8 +133,8 @@ def test_availability_returns_valid_availability_for_zone_and_timestamp():
         '0004': zone_that_is_invalid_because_it_has_no_meters
     }
 
-    assert None == availability_tracker.availability(zone_index, '0001', timestamp_to_test)
-    assert None == availability_tracker.availability(zone_index, '0002', timestamp_to_test)
-    assert 0.6667 == availability_tracker.availability(zone_index, '0003', timestamp_to_test)
-    assert None == availability_tracker.availability(zone_index, '0004', timestamp_to_test)
-    assert None == availability_tracker.availability(zone_index, 'missing zone', timestamp_to_test)
+    assert None == fybr_availability_tracker.availability(zone_index, '0001', timestamp_to_test)
+    assert None == fybr_availability_tracker.availability(zone_index, '0002', timestamp_to_test)
+    assert 0.6667 == fybr_availability_tracker.availability(zone_index, '0003', timestamp_to_test)
+    assert None == fybr_availability_tracker.availability(zone_index, '0004', timestamp_to_test)
+    assert None == fybr_availability_tracker.availability(zone_index, 'missing zone', timestamp_to_test)

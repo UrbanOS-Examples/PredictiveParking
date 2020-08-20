@@ -6,7 +6,7 @@ from contextlib import contextmanager
 
 from tests.fake_websocket_server import create_fake_server, update_event
 from app import app
-from app.availability_provider import AvailabilityProvider
+from app.fybr_availability_provider import FybrAvailabilityProvider
 
 pytestmark = pytest.mark.asyncio
 
@@ -92,10 +92,10 @@ async def test_zone_ids_restricts_zones_compared(client):
 
 @contextmanager
 def use_availability_provider(ap):
-    og_ap = app.availability_provider
-    app.availability_provider = ap
+    og_ap = app.fybr_availability_provider
+    app.fybr_availability_provider = ap
     yield
-    app.availability_provider = og_ap
+    app.fybr_availability_provider = og_ap
 
 
 async def test_app_uses_availability_if_its_there(client):
@@ -113,7 +113,7 @@ async def test_app_uses_availability_if_its_there(client):
         {'meter_id': '9865', 'zone_id': zone_we_did_not_ask_for}
     ]
 
-    availability_provider = AvailabilityProvider(uri, meter_and_zone_list)
+    availability_provider = FybrAvailabilityProvider(uri, meter_and_zone_list)
 
     occupancy_messages = [
         update_event({'id': '9861', 'occupancy': 'UNOCCUPIED', 'time_of_ingest': '2020-05-21T18:00:00.000000'}),

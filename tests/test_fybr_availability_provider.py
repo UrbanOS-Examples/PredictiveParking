@@ -7,7 +7,7 @@ from mockito import mock
 from mockito import patch
 from mockito import unstub
 
-from app.availability_provider import AvailabilityProvider
+from app.fybr_availability_provider import FybrAvailabilityProvider
 from tests.fake_websocket_server import create_fake_server
 from tests.fake_websocket_server import update_event
 
@@ -28,7 +28,7 @@ async def test_can_consume_stream_from_server(event_loop):
         {'meter_id': '9881', 'zone_id': '0003'},
         {'meter_id': '9882', 'zone_id': '0003'}
     ]
-    availability_provider = AvailabilityProvider(uri, meter_and_zone_list)
+    availability_provider = FybrAvailabilityProvider(uri, meter_and_zone_list)
 
     first_chunk_of_messages = [
         update_event({'id': '9861', 'occupancy': 'UNOCCUPIED', 'time_of_ingest': '2020-05-21T18:00:00.000000'}),
@@ -108,7 +108,7 @@ async def test_recovers_from_errors(event_loop):
         {'meter_id': '9881', 'zone_id': '0003'}
     ]
 
-    availability_provider = AvailabilityProvider(uri, meter_and_zone_list)
+    availability_provider = FybrAvailabilityProvider(uri, meter_and_zone_list)
 
     messages = [
         update_event({'id': '9861', 'occupancy': 'UNOCCUPIED', 'time_of_ingest': '2020-05-21T18:00:00.000000'}),

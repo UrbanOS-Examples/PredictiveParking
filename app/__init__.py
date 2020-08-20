@@ -13,14 +13,14 @@ from app import model_provider
 from app import now_adjusted
 from app import predictor
 from app import zone_info
-from app.availability_provider import AvailabilityProvider
+from app.fybr_availability_provider import FybrAvailabilityProvider
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
 
 app = Quart(__name__)
 
-app.availability_provider = AvailabilityProvider(
+app.fybr_availability_provider = FybrAvailabilityProvider(
     'wss://streams.smartcolumbusos.com/socket/websocket',
     []
 )
@@ -29,14 +29,14 @@ app.availability_provider = AvailabilityProvider(
 @app.before_serving
 async def startup():
     LOGGER.info('starting API')
-    app.availability_provider = AvailabilityProvider(
+    app.fybr_availability_provider = FybrAvailabilityProvider(
         'wss://streams.smartcolumbusos.com/socket/websocket',
         zone_info.meter_and_zone_list()
     )
     loop = asyncio.get_event_loop()
 
     LOGGER.info('scheduling availability cache to be filled from stream')
-    app.availability_streamer = loop.create_task(app.availability_provider.handle_websocket_messages())
+    app.fybr_availability_streamer = loop.create_task(app.fybr_availability_provider.handle_websocket_messages())
     LOGGER.info('scheduling model cache to be re-warmed periodically')
     app.model_fetcher = loop.create_task(model_provider.fetch_models_periodically())
     LOGGER.info('finished starting API')
@@ -48,7 +48,7 @@ async def startup():
 
 @app.after_serving
 async def shutdown():
-    app.availability_streamer.cancel()
+    app.fybr_availability_streamer.cancel()
     app.model_fetcher.cancel()
 
 
@@ -62,7 +62,7 @@ async def predictions():
     now = now_adjusted.adjust(datetime.now(timezone('US/Eastern')))
     zone_ids = _parse_zone_ids(request.args.get('zone_ids'))
 
-    availability = predictor.predict_as_index(now, zone_ids)
+    availability = predictor.predict(now, zone_ids)
 
     prediction_transforms = [
         _override_availability_predictions_with_known_values,
@@ -84,7 +84,7 @@ def _parse_zone_ids(request_zone_ids_field) -> Union[List[str], str]:
 
 
 def _override_availability_predictions_with_known_values(predictions):
-    sensor_data = app.availability_provider.get_all_availability()
+    sensor_data = app.fybr_availability_provider.get_all_availability()
 
     for key in predictions.keys() & sensor_data.keys():
         predictions[key] = sensor_data[key]
@@ -102,7 +102,7 @@ async def predictions_comparative():
 
 @app.route('/api/v1/availability')
 async def availability():
-    return jsonify(app.availability_provider.get_all_availability())
+    return jsonify(app.fybr_availability_provider.get_all_availability())
 
 
 if __name__ == '__main__':
