@@ -132,17 +132,6 @@ class ParkingAvailabilityPredictor(Predictor):
         }
 
 
-def predict_with(models, input_datetime, zone_ids='All'):
-    return pd.DataFrame(
-        data={model: predict_formatted(input_datetime, zone_ids, model)
-              for model in models}
-    ).rename(
-        columns=lambda model_tag: f'{model_tag}Prediction'
-    ).assign(
-        zoneId=PredictionRequestAPIFormat(zone_ids=zone_ids).zone_ids
-    ).to_dict('records')
-
-
 def predict(input_datetime, zone_ids='All', model_tag='latest'):
     """
     Predict the availability of parking in all parking zones at a given time.
@@ -186,6 +175,17 @@ def predict(input_datetime, zone_ids='All', model_tag='latest'):
 
 def during_hours_of_operation(input_datetime):
     return input_datetime.weekday() < 6 and 8 <= input_datetime.hour < 22
+
+
+def predict_with(models, input_datetime, zone_ids='All'):
+    return pd.DataFrame(
+        data={model: predict_formatted(input_datetime, zone_ids, model)
+              for model in models}
+    ).rename(
+        columns=lambda model_tag: f'{model_tag}Prediction'
+    ).assign(
+        zoneId=PredictionRequestAPIFormat(zone_ids=zone_ids).zone_ids
+    ).to_dict('records')
 
 
 def predict_formatted(input_datetime, zone_ids='All', model='latest'):
