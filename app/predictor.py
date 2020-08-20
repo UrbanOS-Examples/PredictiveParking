@@ -8,10 +8,9 @@ from typing import Mapping
 from typing import Union
 
 import numpy as np
+import pandas as pd
 from pydantic import BaseModel
 from pydantic import ValidationError
-from pydantic import confloat
-from pydantic import constr
 from pydantic import validate_arguments
 from pydantic import validator
 from sklearn.neural_network import MLPRegressor
@@ -29,7 +28,7 @@ class Predictor(ABC):
 
 class ParkingAvailabilityPredictorInput(BaseModel):
     timestamp: datetime = None
-    zone_ids: List[str] = 'All'
+    zone_ids: Union[List[str], Literal['All']] = 'All'
 
     @validator('timestamp', pre=True, always=True)
     def use_current_time_if_no_timestamp_is_provided(cls, timestamp):
@@ -75,23 +74,14 @@ class ParkingAvailabilityPredictor(Predictor):
 
 
 def predict_with(models, input_datetime, zone_ids='All'):
-    predictions = {}
-    lead_model = models[0]
-    for model in models:
-        predictions[model] = predict(input_datetime, zone_ids, model)
-
-    zipped_predictions = []
-    for index in range(len(predictions[lead_model])):
-        zone_id = predictions[lead_model][index]['zoneId']
-        zipped_prediction = {
-            'zoneId': zone_id
-        }
-
-        for model in models:
-            zipped_prediction[f'{model}Prediction'] = predictions[model][index]['availabilityPrediction']
-
-        zipped_predictions.append(zipped_prediction)
-    return zipped_predictions
+    return pd.DataFrame(
+        data={model: predict(input_datetime, zone_ids, model)
+              for model in models}
+    ).rename(
+        columns=lambda model_tag: f'{model_tag}Prediction'
+    ).assign(
+        zoneId=ParkingAvailabilityPredictorInput(zone_ids=zone_ids).zone_ids
+    ).to_dict('records')
 
 
 def predict(input_datetime, zone_ids='All', model='latest'):
@@ -187,7 +177,7 @@ def extract_features(input_datetime):
     return semihour_input[1:] + day_input[1:]
 
 
-def predict_as_api_format(indexed_predictions):
+def predict_as_api_format(predictions):
     """
     Transform a dictionary of predictions into a list of outputs in API format.
 
