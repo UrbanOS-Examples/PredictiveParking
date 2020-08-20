@@ -6,3 +6,8 @@ def log_exception(details):
           "calling function {target} with args {args} and kwargs "
           "{kwargs}".format(**details))
     print(f"Backing off due to exception {sys.exc_info()}")
+
+
+def snake_to_camel(snake):
+    words = snake.split('_')
+    return f'{words[0]}{"".join(word.title() for word in words[1:])}'

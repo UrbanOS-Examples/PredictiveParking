@@ -66,7 +66,7 @@ async def predictions():
 
     prediction_transforms = [
         _override_availability_predictions_with_known_values,
-        predictor.predict_as_api_format,
+        predictor.to_api_format,
         jsonify
     ]
     for transform in prediction_transforms:

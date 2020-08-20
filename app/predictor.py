@@ -1,7 +1,6 @@
 from abc import ABC
 from abc import abstractmethod
 from datetime import datetime
-from itertools import starmap
 from typing import List
 from typing import Literal
 from typing import Mapping
@@ -11,12 +10,17 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel
 from pydantic import ValidationError
+from pydantic import confloat
+from pydantic import constr
 from pydantic import validate_arguments
 from pydantic import validator
 from sklearn.neural_network import MLPRegressor
 
 from app import model_provider
 from app import zone_info
+
+
+PARK_MOBILE_SUPPLIER_ID: str = '970010'
 
 
 class Predictor(ABC):
@@ -26,7 +30,7 @@ class Predictor(ABC):
         ...
 
 
-class ParkingAvailabilityPredictorInput(BaseModel):
+class PredictionRequestAPIFormat(BaseModel):
     timestamp: datetime = None
     zone_ids: Union[List[str], Literal['All']] = 'All'
 
@@ -47,13 +51,23 @@ class ParkingAvailabilityPredictorInput(BaseModel):
         return list(zone_ids)
 
 
+class PredictionAPIFormat(BaseModel):
+    zoneId: constr(min_length=1)
+    availabilityPrediction: confloat(ge=0, le=1)
+    supplierID: Literal[PARK_MOBILE_SUPPLIER_ID] = PARK_MOBILE_SUPPLIER_ID
+
+    @validator('availabilityPrediction', pre=True)
+    def prediction_should_be_rounded(cls, availability_prediction):
+        return round(availability_prediction, 4)
+
+
 class ParkingAvailabilityPredictor(Predictor):
     def __init__(self, model_tag='latest'):
         super().__init__()
         self._location_models: Mapping[str, MLPRegressor] = model_provider.get_all(model_tag)
 
     @validate_arguments
-    def predict(self, data: ParkingAvailabilityPredictorInput) -> Mapping[str, float]:
+    def predict(self, data: PredictionRequestAPIFormat) -> Mapping[str, float]:
         if not during_hours_of_operation(data.timestamp):
             return {}
 
@@ -80,7 +94,7 @@ def predict_with(models, input_datetime, zone_ids='All'):
     ).rename(
         columns=lambda model_tag: f'{model_tag}Prediction'
     ).assign(
-        zoneId=ParkingAvailabilityPredictorInput(zone_ids=zone_ids).zone_ids
+        zoneId=PredictionRequestAPIFormat(zone_ids=zone_ids).zone_ids
     ).to_dict('records')
 
 
@@ -109,11 +123,11 @@ def predict(input_datetime, zone_ids='All', model='latest'):
 
     See Also
     --------
-    _as_api_format : Defines the current prediction API format
+    PredictionAPIFormat : Defines the current prediction API record format
     """
     index = predict_as_index(input_datetime, zone_ids, model)
 
-    return predict_as_api_format(index)
+    return to_api_format(index)
 
 
 def predict_as_index(input_datetime, zone_ids='All', model='latest'):
@@ -141,7 +155,8 @@ def predict_as_index(input_datetime, zone_ids='All', model='latest'):
         and 1.
     """
     try:
-        return ParkingAvailabilityPredictor(model_tag=model).predict({'timestamp': input_datetime, 'zone_ids': zone_ids})
+        return ParkingAvailabilityPredictor(model_tag=model).predict(
+            {'timestamp': input_datetime, 'zone_ids': zone_ids})
     except ValidationError:
         return {}
 
@@ -177,7 +192,7 @@ def extract_features(input_datetime):
     return semihour_input[1:] + day_input[1:]
 
 
-def predict_as_api_format(predictions):
+def to_api_format(predictions):
     """
     Transform a dictionary of predictions into a list of outputs in API format.
 
@@ -195,14 +210,12 @@ def predict_as_api_format(predictions):
     See Also
     --------
     predict_as_index : Predict parking availability given feature lists
-    _as_api_format : Defines the current prediction API format
+    PredictionAPIFormat : Defines the current prediction API record format
     """
-    return list(starmap(_as_api_format, predictions.items()))
-
-
-def _as_api_format(zone_id, predicted_val):
-    return {
-        'zoneId': zone_id,
-        'availabilityPrediction': round(np.clip(predicted_val, 0, 1), 4),
-        'supplierID': '970010'
-    }
+    return [
+        PredictionAPIFormat(
+            zoneId=zone_id,
+            availabilityPrediction=availability
+        ).dict()
+        for zone_id, availability in predictions.items()
+    ]
