@@ -88,7 +88,6 @@ def predict_with(models, input_datetime, zone_ids='All'):
         }
 
         for model in models:
-            assert zone_id == predictions[model][index]['zoneId']
             zipped_prediction[f'{model}Prediction'] = predictions[model][index]['availabilityPrediction']
 
         zipped_predictions.append(zipped_prediction)

@@ -3,6 +3,15 @@ from datetime import datetime
 from app import predictor
 
 
+def test_predict_results_are_ordered(with_warmup):
+    zone_ids = ['31001', '31006']
+    prediction_zone_ids = [
+        prediction['zoneId']
+        for prediction in predictor.predict(datetime(2020, 2, 8, 14), zone_ids)
+    ]
+    assert prediction_zone_ids == zone_ids
+
+
 def test_predict_returns_availability_for_zone_ids_during_normal_hours(with_warmup):
     predictions = predictor.predict(datetime(2020, 2, 8, 13, 29, 0))
 
