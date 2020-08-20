@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import List
 from typing import Literal
-from typing import Union
 
 from pydantic import BaseModel
 from pydantic import confloat
@@ -15,7 +14,7 @@ PARK_MOBILE_SUPPLIER_ID: str = '970010'
 
 class PredictionRequestAPIFormat(BaseModel):
     timestamp: datetime = None
-    zone_ids: Union[List[str], Literal['All']] = 'All'
+    zone_ids: List[str] = 'All'
 
     @validator('timestamp', pre=True, always=True)
     def use_current_time_if_no_timestamp_is_provided(cls, timestamp):
