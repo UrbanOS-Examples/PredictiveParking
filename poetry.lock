@@ -46,7 +46,7 @@ six = ">=1.12,<2.0"
 wrapt = ">=1.11,<2.0"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Atomic file writes."
 marker = "sys_platform == \"win32\""
 name = "atomicwrites"
@@ -55,7 +55,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "1.4.0"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Classes Without Boilerplate"
 name = "attrs"
 optional = false
@@ -271,7 +271,7 @@ click = ">=4.0,<8"
 test = ["pytest-cov"]
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Cross-platform colored terminal text."
 marker = "sys_platform == \"win32\""
 name = "colorama"
@@ -562,6 +562,55 @@ python-versions = "*"
 version = "5.2.0"
 
 [[package]]
+category = "dev"
+description = "A library for property-based testing"
+name = "hypothesis"
+optional = false
+python-versions = ">=3.5.2"
+version = "5.29.0"
+
+[package.dependencies]
+attrs = ">=19.2.0"
+sortedcontainers = ">=2.1.0,<3.0.0"
+
+[package.extras]
+all = ["black (>=19.10b0)", "click (>=7.0)", "django (>=2.2)", "dpcontracts (>=0.4)", "lark-parser (>=0.6.5)", "numpy (>=1.9.0)", "pandas (>=0.19)", "pytest (>=4.3)", "python-dateutil (>=1.4)", "pytz (>=2014.1)"]
+cli = ["click (>=7.0)", "black (>=19.10b0)"]
+dateutil = ["python-dateutil (>=1.4)"]
+django = ["pytz (>=2014.1)", "django (>=2.2)"]
+dpcontracts = ["dpcontracts (>=0.4)"]
+ghostwriter = ["black (>=19.10b0)"]
+lark = ["lark-parser (>=0.6.5)"]
+numpy = ["numpy (>=1.9.0)"]
+pandas = ["pandas (>=0.19)"]
+pytest = ["pytest (>=4.3)"]
+pytz = ["pytz (>=2014.1)"]
+
+[[package]]
+category = "dev"
+description = "Generate test data from JSON schemata with Hypothesis"
+name = "hypothesis-jsonschema"
+optional = false
+python-versions = ">=3.6"
+version = "0.17.3"
+
+[package.dependencies]
+hypothesis = ">=5.3.0"
+jsonschema = ">=3.0.2"
+
+[[package]]
+category = "dev"
+description = "Pytest plugin for better integration with hypothesis"
+name = "hypothesis-pytest"
+optional = false
+python-versions = "*"
+version = "0.19.0"
+
+[package.dependencies]
+hypothesis = ">=1.11.2"
+pytest = ">=2.7.0"
+
+[[package]]
 category = "main"
 description = "Internationalized Domain Names in Applications (IDNA)"
 name = "idna"
@@ -585,7 +634,7 @@ docs = ["sphinx", "rst.linker"]
 testing = ["packaging", "pep517", "importlib-resources (>=1.3)"]
 
 [[package]]
-category = "main"
+category = "dev"
 description = "iniconfig: brain-dead simple config-ini parsing"
 name = "iniconfig"
 optional = false
@@ -892,7 +941,7 @@ docs = ["sphinx"]
 test = ["pytest", "pytest-cov"]
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Spying framework"
 name = "mockito"
 optional = false
@@ -900,7 +949,7 @@ python-versions = "*"
 version = "1.2.1"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "More routines for operating on iterables, beyond itertools"
 name = "more-itertools"
 optional = false
@@ -1087,7 +1136,7 @@ folium = ["folium (>=0.11)"]
 kdtree = ["scipy (>=1.4)"]
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Core utilities for Python packages"
 name = "packaging"
 optional = false
@@ -1174,7 +1223,7 @@ python-versions = ">=3.5"
 version = "7.2.0"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "plugin and hook calling mechanisms for python"
 name = "pluggy"
 optional = false
@@ -1224,7 +1273,7 @@ python-versions = "*"
 version = "0.6.0"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "library with cross-python path, ini-parsing, io, code, log facilities"
 name = "py"
 optional = false
@@ -1308,7 +1357,7 @@ python-versions = "*"
 version = "4.0.30"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Python parsing module"
 name = "pyparsing"
 optional = false
@@ -1335,7 +1384,7 @@ version = "0.16.0"
 six = "*"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "pytest: simple powerful testing with Python"
 name = "pytest"
 optional = false
@@ -1372,7 +1421,7 @@ pytest = ">=5.4.0"
 testing = ["async-generator (>=1.3)", "coverage", "hypothesis (>=5.7.1)"]
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Base fixtures for mockito"
 name = "pytest-mockito"
 optional = false
@@ -1512,6 +1561,17 @@ tests = ["coverage (>=3.7.1,<5.0.0)", "pytest-cov", "pytest-localserver", "flake
 
 [[package]]
 category = "dev"
+description = "A pure python RFC3339 validator"
+name = "rfc3339-validator"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+version = "0.1.2"
+
+[package.dependencies]
+six = "*"
+
+[[package]]
+category = "dev"
 description = "Pure-Python RSA implementation"
 name = "rsa"
 optional = false
@@ -1610,6 +1670,14 @@ name = "smmap"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "3.0.4"
+
+[[package]]
+category = "dev"
+description = "Sorted Containers -- Sorted List, Sorted Dict, Sorted Set"
+name = "sortedcontainers"
+optional = false
+python-versions = "*"
+version = "2.2.2"
 
 [[package]]
 category = "dev"
@@ -1801,7 +1869,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "3bea2674c8fa5a072f010fdb6ca05aeccf5c33e722230140af0253224d6ab01e"
+content-hash = "cee1a2f3425547fa38defb8828f8d60f833883fdd7fc4cdc20f7c382b36ab42c"
 python-versions = "^3.8"
 
 [metadata.files]
@@ -2060,6 +2128,17 @@ hypercorn = [
 hyperframe = [
     {file = "hyperframe-5.2.0-py2.py3-none-any.whl", hash = "sha256:5187962cb16dcc078f23cb5a4b110098d546c3f41ff2d4038a9896893bbd0b40"},
     {file = "hyperframe-5.2.0.tar.gz", hash = "sha256:a9f5c17f2cc3c719b917c4f33ed1c61bd1f8dfac4b1bd23b7c80b3400971b41f"},
+]
+hypothesis = [
+    {file = "hypothesis-5.29.0-py3-none-any.whl", hash = "sha256:fc0f087e403175e6a9db36e1361bf336592f7641be21d51535a2537610410ac7"},
+    {file = "hypothesis-5.29.0.tar.gz", hash = "sha256:67f6261176d22019bbb82dea463d9c3890dcc9722607cb2a7869f16c05d076ec"},
+]
+hypothesis-jsonschema = [
+    {file = "hypothesis-jsonschema-0.17.3.tar.gz", hash = "sha256:75d71bfb00535ca6cabdbb5e726e6aa6083ac35ece32a23d810aa8775701ee53"},
+    {file = "hypothesis_jsonschema-0.17.3-py3-none-any.whl", hash = "sha256:857bd5124473e10dd4a7e4920c6c93d9b7e933e667850bfa8945d5c98eefdb19"},
+]
+hypothesis-pytest = [
+    {file = "hypothesis-pytest-0.19.0.tar.gz", hash = "sha256:550fd3a651eb13d399efba3172bd010a42f6c34c2baa04cf072bda0911054e06"},
 ]
 idna = [
     {file = "idna-2.8-py2.py3-none-any.whl", hash = "sha256:ea8b7f6188e6fa117537c3df7da9fc686d485087abf6ac197f9c46432f7e4a3c"},
@@ -2604,6 +2683,10 @@ responses = [
     {file = "responses-0.10.16-py2.py3-none-any.whl", hash = "sha256:cf55b7c89fc77b9ebbc5e5924210b6d0ef437061b80f1273d7e202069e43493c"},
     {file = "responses-0.10.16.tar.gz", hash = "sha256:fa125311607ab3e57d8fcc4da20587f041b4485bdfb06dd6bdf19d8b66f870c1"},
 ]
+rfc3339-validator = [
+    {file = "rfc3339_validator-0.1.2-py2.py3-none-any.whl", hash = "sha256:ce04632ad50bd8cead747a17baabbf720dc0203adc7eee9e66b702a24265dc35"},
+    {file = "rfc3339_validator-0.1.2.tar.gz", hash = "sha256:c9659c3183488a1875c4d327c9873d9e92c54cdcd69dfbfae7546ad8b27baf9a"},
+]
 rsa = [
     {file = "rsa-4.6-py3-none-any.whl", hash = "sha256:6166864e23d6b5195a5cfed6cd9fed0fe774e226d8f854fcb23b7bbef0350233"},
     {file = "rsa-4.6.tar.gz", hash = "sha256:109ea5a66744dd859bf16fe904b8d8b627adafb9408753161e766a92e7d681fa"},
@@ -2688,6 +2771,10 @@ six = [
 smmap = [
     {file = "smmap-3.0.4-py2.py3-none-any.whl", hash = "sha256:54c44c197c819d5ef1991799a7e30b662d1e520f2ac75c9efbeb54a742214cf4"},
     {file = "smmap-3.0.4.tar.gz", hash = "sha256:9c98bbd1f9786d22f14b3d4126894d56befb835ec90cef151af566c7e19b5d24"},
+]
+sortedcontainers = [
+    {file = "sortedcontainers-2.2.2-py2.py3-none-any.whl", hash = "sha256:c633ebde8580f241f274c1f8994a665c0e54a17724fecd0cae2f079e09c36d3f"},
+    {file = "sortedcontainers-2.2.2.tar.gz", hash = "sha256:4e73a757831fc3ca4de2859c422564239a31d8213d09a2a666e375807034d2ba"},
 ]
 sshpubkeys = [
     {file = "sshpubkeys-3.1.0-py2.py3-none-any.whl", hash = "sha256:9f73d51c2ef1e68cd7bde0825df29b3c6ec89f4ce24ebca3bf9eaa4a23a284db"},
