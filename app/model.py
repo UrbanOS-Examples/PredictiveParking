@@ -16,8 +16,16 @@ from sklearn.neural_network import MLPRegressor
 
 from app import model_provider
 from app import zone_info
+from app.constants import DAY_OF_WEEK
+from app.constants import HOURS_END
+from app.constants import HOURS_START
+from app.constants import UNENFORCED_DAYS
 from app.data_formats import APIPrediction
 from app.data_formats import APIPredictionRequest
+
+
+TOTAL_SEMIHOURS = 2 * (HOURS_END - HOURS_START).hours + abs(HOURS_END.minute - HOURS_START.minute) // 30
+TOTAL_ENFORCEMENT_DAYS = 7 - len(UNENFORCED_DAYS)
 
 
 class Predictor(ABC):
@@ -29,8 +37,12 @@ class Predictor(ABC):
 
 class ModelFeatures(BaseModel):
     zone_ids: List[str]
-    semihour_onehot: conlist(int, min_items=27, max_items=27)
-    dayofweek_onehot: conlist(int, min_items=5, max_items=5)
+    semihour_onehot: conlist(int,
+                             min_items=TOTAL_SEMIHOURS - 1,
+                             max_items=TOTAL_SEMIHOURS - 1)
+    dayofweek_onehot: conlist(int,
+                              min_items=TOTAL_ENFORCEMENT_DAYS - 1,
+                              max_items=TOTAL_ENFORCEMENT_DAYS - 1)
 
     @validator('semihour_onehot', 'dayofweek_onehot')
     def one_hot_encoded(cls, feature):
@@ -58,19 +70,27 @@ class ModelFeatures(BaseModel):
             A set of features that can be passed into the `predict` method of a
             `ParkingAvailabilityPredictor`.
         """
-        input_datetime = request.timestamp
-        semihour_index = min(27, 2 * (input_datetime.hour - 8) + input_datetime.minute // 30)
-        semihour_input = [0] * 28
-        semihour_input[semihour_index] = 1
+        timestamp = request.timestamp
 
-        day_index = input_datetime.weekday()
-        day_input = [0] * 6
-        day_input[day_index] = 1
+        semihour_onehot = TOTAL_SEMIHOURS * [0]
+        semihour_index = min(
+            2 * (timestamp.hour - HOURS_START.hour) + timestamp.minute // 30,
+            len(semihour_onehot) - 1
+        )
+        semihour_onehot[semihour_index] = 1
+
+        dayofweek_onehot = TOTAL_ENFORCEMENT_DAYS * [0]
+        enforcement_day_index = -1
+        dayofweek_to_index = {day.value: (enforcement_day_index := enforcement_day_index + 1)
+                              for day in DAY_OF_WEEK if day not in UNENFORCED_DAYS}
+
+        day_index = timestamp.weekday()
+        dayofweek_onehot[dayofweek_to_index[day_index]] = 1
 
         return ModelFeatures(
             zone_ids=request.zone_ids,
-            semihour_onehot=semihour_input[1:],
-            dayofweek_onehot=day_input[1:]
+            semihour_onehot=semihour_onehot[1:],
+            dayofweek_onehot=dayofweek_onehot[1:]
         )
 
 

@@ -17,7 +17,7 @@ from app.predictor import ModelFeatures
         dt.datetime.combine,
         date=st.dates().filter(lambda dt: DAY_OF_WEEK(dt.weekday()) not in UNENFORCED_DAYS),
         time=st.times(HOURS_START, HOURS_END),
-        tzinfo=st.one_of(st.just(TIME_ZONE), st.none())
+        tzinfo=st.sampled_from([TIME_ZONE, None])
     ),
     zone_ids=st.lists(
         elements=st.from_regex(r'.+'),
