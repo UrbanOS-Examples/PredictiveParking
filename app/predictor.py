@@ -1,8 +1,8 @@
 import pandas as pd
 from pydantic import ValidationError
 
-from app.data_formats import PredictionAPIFormat
-from app.data_formats import PredictionRequestAPIFormat
+from app.data_formats import APIPrediction
+from app.data_formats import APIPredictionRequest
 from app.model import ModelFeatures
 from app.model import ParkingAvailabilityPredictor
 
@@ -37,7 +37,7 @@ def predict(input_datetime, zone_ids='All', model_tag='latest'):
         try:
             predictions = ParkingAvailabilityPredictor(model_tag).predict(
                 ModelFeatures.from_request(
-                    PredictionRequestAPIFormat(
+                    APIPredictionRequest(
                         timestamp=input_datetime,
                         zone_ids=zone_ids
                     )
@@ -59,7 +59,7 @@ def predict_with(models, input_datetime, zone_ids='All'):
     ).rename(
         columns=lambda model_tag: f'{model_tag}Prediction'
     ).assign(
-        zoneId=PredictionRequestAPIFormat(zone_ids=zone_ids).zone_ids
+        zoneId=APIPredictionRequest(zone_ids=zone_ids).zone_ids
     ).to_dict('records')
 
 
@@ -88,7 +88,7 @@ def predict_formatted(input_datetime, zone_ids='All', model='latest'):
 
     See Also
     --------
-    PredictionAPIFormat : Defines the current prediction API record format
+    APIPrediction : Defines the current prediction API record format
     """
     return to_api_format(predict(input_datetime, zone_ids, model))
 
@@ -111,10 +111,10 @@ def to_api_format(predictions):
     See Also
     --------
     predict : Predict parking availability given feature lists
-    PredictionAPIFormat : Defines the current prediction API record format
+    APIPrediction : Defines the current prediction API record format
     """
     return [
-        PredictionAPIFormat(
+        APIPrediction(
             zoneId=zone_id,
             availabilityPrediction=availability
         ).dict()

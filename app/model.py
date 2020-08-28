@@ -16,14 +16,14 @@ from sklearn.neural_network import MLPRegressor
 
 from app import model_provider
 from app import zone_info
-from app.data_formats import PredictionAPIFormat
-from app.data_formats import PredictionRequestAPIFormat
+from app.data_formats import APIPrediction
+from app.data_formats import APIPredictionRequest
 
 
 class Predictor(ABC):
     """An abstract base class for trained predictive models"""
     @abstractmethod
-    def predict(self, data: 'ModelFeatures') -> List[PredictionAPIFormat]:
+    def predict(self, data: 'ModelFeatures') -> List[APIPrediction]:
         ...
 
 
@@ -42,14 +42,14 @@ class ModelFeatures(BaseModel):
 
     @staticmethod
     @validate_arguments
-    def from_request(request: PredictionRequestAPIFormat):
+    def from_request(request: APIPredictionRequest):
         """
         Convert a prediction request to the input format expected by a parking
         availability model.
 
         Parameters
         ----------
-        request : PredictionRequestAPIFormat
+        request : APIPredictionRequest
             The prediction request to transform into model features
 
         Returns

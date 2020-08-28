@@ -12,7 +12,7 @@ from app import zone_info
 PARK_MOBILE_SUPPLIER_ID: str = '970010'
 
 
-class PredictionRequestAPIFormat(BaseModel):
+class APIPredictionRequest(BaseModel):
     timestamp: datetime = None
     zone_ids: List[str] = 'All'
 
@@ -33,7 +33,7 @@ class PredictionRequestAPIFormat(BaseModel):
         return list(zone_ids)
 
 
-class PredictionAPIFormat(BaseModel):
+class APIPrediction(BaseModel):
     zoneId: constr(min_length=1)
     availabilityPrediction: confloat(ge=0, le=1)
     supplierID: Literal[PARK_MOBILE_SUPPLIER_ID] = PARK_MOBILE_SUPPLIER_ID
