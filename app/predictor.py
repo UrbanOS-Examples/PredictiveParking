@@ -9,7 +9,8 @@ from app.model import ParkingAvailabilityPredictor
 
 def predict(input_datetime, zone_ids='All', model_tag='latest'):
     """
-    Predict the availability of parking in all parking zones at a given time.
+    Predict the availability of parking in all parking zones at a given
+    time.
 
     Parameters
     ----------
@@ -17,19 +18,19 @@ def predict(input_datetime, zone_ids='All', model_tag='latest'):
         The date and time at which parking meter availability should be
         predicted.
     zone_ids : str or collection of hashable, optional
-        The parking zones where availability estimates are being requested. The
-        default is 'All', which will result in availability predictions for all
-        parking zones.
+        The parking zones where availability estimates are being requested.
+        The default is 'All', which will result in availability predictions
+        for all parking zones.
     model_tag : str, optional
         The identifier of the model parameters to use (default: 'latest').
 
     Returns
     -------
     dict of {str : float}
-        A mapping of zone IDs to their predicted parking availability values.
-        Parking availability is expressed as a ratio of available parking spots
-        to total parking spots in each zone, represented as a float between 0
-        and 1.
+        A mapping of zone IDs to their predicted parking availability
+        values. Parking availability is expressed as a ratio of available
+        parking spots to total parking spots in each zone, represented as a
+        float between 0 and 1.
     """
     if not during_hours_of_operation(input_datetime):
         predictions = {}
