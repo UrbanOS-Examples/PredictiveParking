@@ -5,13 +5,14 @@ import hypothesis.strategies as st
 from hypothesis import given
 
 from app import now_adjusted
+from app.constants import TIME_ZONE
 
 
 def local_datetimes(
     *,
     dates=st.dates(),
     times: st.SearchStrategy,
-    timezones=st.one_of(st.just(pytz.timezone('America/New_York')), st.none())
+    timezones=st.one_of(st.just(TIME_ZONE), st.none())
 ) -> st.SearchStrategy:
     return st.builds(dt.datetime.combine,
                      date=dates, time=times, tzinfo=timezones)

@@ -8,8 +8,7 @@ from pydantic import constr
 from pydantic import validator
 
 from app import zone_info
-
-PARK_MOBILE_SUPPLIER_ID: str = '970010'
+from app.constants import PARK_MOBILE_SUPPLIER_ID
 
 
 class APIPredictionRequest(BaseModel):

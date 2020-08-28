@@ -18,3 +18,4 @@ __pycache__/
 data/raw/*.csv
 **/.ipynb_checkpoints
 .python-version
+/tests/.hypothesis/
