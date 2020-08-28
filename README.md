@@ -40,7 +40,7 @@ a zero vector to avoid perfect multicollinearity.
     retrieved from S3 by `app/model_provider.py` is used to generate parking
     availability predictions.
 
-## Local development
+## Getting Started
 ### Environment Setup
 #### Install Python dependencies
 ```bash
@@ -67,3 +67,37 @@ poetry run quart run
 ```bash
 poetry run pytest
 ```
+
+### Notes for Data Scientists
+This repository has been architected in such a way there are only a few places
+where changes need to be made in order to upgrade the parking availability
+prediction model. These files are as follows:
+- the `app.model` Python module. This is where you should implement all feature
+  engineering code, model implementation code, etc. Specifically, the following
+  classes must be defined
+  - `ModelFeatures`: A `pydantic` model specifying all of the features expected
+    by your model.
+    - This class must also provide a static `from_request` method for
+      converting `APIPredictionRequest` objects into `ModelFeatures`.
+  - `ParkingAvailabilityPredictor`: This is the actual trained model. It should
+    include a `predict` method that takes a `ModelFeatures` object `features`
+    and returns prediction values as an iterable of `float`s where the `i`-th
+    `float` gives the parking availability prediction (as a probability) for
+    the parking zone with `i`-th ID in `features.zone_id`.
+- the `train.py` script, which contains code to retrieve training data, train a
+  model, compare its performance to its recent predecessors, and upload
+  newly-trained models to cloud storage. When updating the model, changes may be
+  necessary here to control
+  - how features are derived from the retrieved dataset,
+    - Ideally, this would be done by converting dataset records into
+      `PredictionAPIRequest`s and calling `ModelFeatures.from_request` on the
+      requests. If the training dataset diverges from the production data in
+      structure, however, this can be an alternative location for said code.
+  - the core training procedure,
+  - how the model is packaged into a self-contained, serializable object for
+    storage purposes.
+  Other code modifications in `train.py` should only be necessary when a
+  fundamental change has occurred in our data sources, how model performance is
+  evaluated, etc.
+- unit tests for `app.model` in `tests/test_model.py`
+  - These should be largely left unmodified or expanded upon.
