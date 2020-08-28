@@ -59,7 +59,7 @@ class ModelFeatures(BaseModel):
             `ParkingAvailabilityPredictor`.
         """
         input_datetime = request.timestamp
-        semihour_index = 2 * (input_datetime.hour - 8) + input_datetime.minute // 30
+        semihour_index = min(27, 2 * (input_datetime.hour - 8) + input_datetime.minute // 30)
         semihour_input = [0] * 28
         semihour_input[semihour_index] = 1
 
