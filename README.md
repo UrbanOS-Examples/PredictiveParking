@@ -2,7 +2,8 @@
 This is a project to predict parking meter availability for ParkMobile.
 
 - Environment: Python 3.8
-- Dependencies are captured in the project's [`Pipfile`](Pipfile).
+- Dependencies are captured in the project's [`pyproject.toml`](pyproject.toml)
+  file.
 
 ## Model Information
 The available parking model is really a *set* of models, trained separately for
@@ -15,7 +16,7 @@ for the models trained and utilized for forecasting in this repository.
 
 ### Model I/O
 The availability prediction models expect to receive a list of 32 features
-```python
+```
     [tod_1, tod_2, …, tod_27, dow_1, …, dow_5]
 ```
 where
@@ -24,9 +25,9 @@ where
     and
   - `dow_1` through `dow_5` represent a one-hot encoded day of the week between
     Monday and Saturday.
-Both one-hot encodings represent the first value of their respective categorical
-variables (that is, 8:00 AM–8:30 AM for the former and Monday for the latter) as
-a zero vector to avoid perfect multicollinearity.
+Both one-hot encodings represent the first value of their respective
+categorical variables (that is, 8:00 AM–8:30 AM for the former and Monday for
+the latter) as a zero vector to avoid perfect multicollinearity.
 
 ### Model-Related Files
   - `app/meter_configs/zone_cluster16_short_north_downtown_15_19.csv`: Contains
@@ -86,8 +87,8 @@ prediction model. These files are as follows:
     the parking zone with `i`-th ID in `features.zone_id`.
 - the `train.py` script, which contains code to retrieve training data, train a
   model, compare its performance to its recent predecessors, and upload
-  newly-trained models to cloud storage. When updating the model, changes may be
-  necessary here to control
+  newly-trained models to cloud storage. When updating the model, changes may
+  be necessary here to control
   - how features are derived from the retrieved dataset,
     - Ideally, this would be done by converting dataset records into
       `PredictionAPIRequest`s and calling `ModelFeatures.from_request` on the
