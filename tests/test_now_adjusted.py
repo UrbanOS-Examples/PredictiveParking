@@ -1,5 +1,4 @@
 import datetime as dt
-import pytz
 
 import hypothesis.strategies as st
 from hypothesis import given
