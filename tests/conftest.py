@@ -1,8 +1,6 @@
 import asyncio
 import logging
-from os import environ
-from os import path
-from os import walk
+import os
 
 import boto3
 import pytest
@@ -10,6 +8,8 @@ from moto import mock_s3
 
 from app import app
 from app import model_provider
+from app.model_provider import MODELS_DIR_LATEST
+from app.model_provider import MODELS_DIR_ROOT
 
 logging.getLogger('botocore').setLevel(logging.WARN)
 
@@ -35,22 +35,22 @@ async def with_warmup(fake_model_files_in_s3):
 
 @pytest.fixture(scope='session')
 def fake_model_files_in_s3():
-    environ['COMPARED_MODELS'] = '12month,18month,24month'
+    os.environ['COMPARED_MODELS'] = '12month,18month,24month'
     with mock_s3():
         conn = boto3.resource('s3')
 
         bucket = conn.Bucket('dev-parking-prediction')
         bucket.create()
 
-        base_dir = path.dirname(path.abspath(__file__))
-        fixture_dir = path.join(base_dir, 'fixtures')
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        fixture_dir = os.path.join(base_dir, 'fixtures')
 
-        for directory, _, filenames in walk(fixture_dir):
+        for directory, _, filenames in os.walk(fixture_dir):
             for filename in filenames:
-                file_path = path.join(directory, filename)
-                bucket.upload_file(file_path, f'/models/latest/{filename}')
-                bucket.upload_file(file_path, f'/models/12month/{filename}')
-                bucket.upload_file(file_path, f'/models/18month/{filename}')
-                bucket.upload_file(file_path, f'/models/24month/{filename}')
+                file_path = os.path.join(directory, filename)
+                bucket.upload_file(file_path, f'{MODELS_DIR_LATEST}/{filename}')
+                bucket.upload_file(file_path, f'{MODELS_DIR_ROOT}/12month/{filename}')
+                bucket.upload_file(file_path, f'{MODELS_DIR_ROOT}/18month/{filename}')
+                bucket.upload_file(file_path, f'{MODELS_DIR_ROOT}/24month/{filename}')
 
         yield

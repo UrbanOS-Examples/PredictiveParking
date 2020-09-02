@@ -44,7 +44,7 @@ def predict(input_datetime, zone_ids='All', model_tag='latest'):
                     )
                 )
             )
-        except ValidationError as e:
+        except ValidationError:
             predictions = {}
     return predictions
 
@@ -55,7 +55,7 @@ def during_hours_of_operation(input_datetime):
 
 def predict_with(models, input_datetime, zone_ids='All'):
     return pd.DataFrame(
-        data={model: predict_formatted(input_datetime, zone_ids, model)
+        data={model: predict(input_datetime, zone_ids, model)
               for model in models}
     ).rename(
         columns=lambda model_tag: f'{model_tag}Prediction'
