@@ -63,21 +63,17 @@ def main():
 
 
 def _get_database_config():
-    config_parser = configparser.RawConfigParser()
-    config_parser.read(DIRNAME / 'app/train.config')
+    config = configparser.RawConfigParser()
+    config.read(DIRNAME / 'app/train.config')
 
-    environment = os.getenv('SCOS_ENV', default='dev')
-    url = os.getenv('SQL_SERVER_URL',
-                    default=config_parser.get(environment, 'mssql_url'))
-    database = os.getenv('SQL_SERVER_DATABASE',
-                         default=config_parser.get(environment, 'mssql_db_name'))
-    username = os.getenv('SQL_SERVER_USERNAME',
-                         default=config_parser.get(environment, 'mssql_db_user'))
-    password = os.getenv('SQL_SERVER_PASSWORD')
-    if password is None:
-        password = getpass.getpass()
-
-    return SqlServerConfig(url, database, username, password)
+    smrt_environment = os.getenv('SCOS_ENV', default='dev')
+    sql_password = os.getenv('SQL_SERVER_PASSWORD') or getpass.getpass()
+    return SqlServerConfig(
+        server=os.getenv('SQL_SERVER_URL', config.get(smrt_environment, 'mssql_url')),
+        database=os.getenv('SQL_SERVER_DATABASE', config.get(smrt_environment, 'mssql_db_name')),
+        uid=os.getenv('SQL_SERVER_USERNAME', config.get(smrt_environment, 'mssql_db_user')),
+        pwd=sql_password
+    )
 
 
 def _get_occupancy_data_from_database(database_config):
