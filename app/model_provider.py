@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import pickle
+import sys
 from datetime import date
 from io import BytesIO
 from itertools import starmap
@@ -14,33 +15,35 @@ from app import zone_info
 from app.util import log_exception
 
 LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.INFO)
+if sys.stdout.isatty():
+    LOGGER.addHandler(logging.StreamHandler(sys.stdout))
 
 TTL_HOURS = 12
 TTL_SECONDS = TTL_HOURS * 60 * 60
 
-MODEL_FILE_PREFIX = 'mlp_shortnorth_downtown_cluster'
-MODEL_LATEST_PATH = 'models/latest/'
+MODELS_DIR_ROOT = 'models'
+MODELS_DIR_LATEST = f'{MODELS_DIR_ROOT}/latest'
+MODEL_FILE_NAME_PREFIX = 'mlp_shortnorth_downtown_cluster'
 
 MODELS = {}
 
 
 def get_all(model='latest'):
     return MODELS.get(model, {})
-    
+
 
 def warm_model_caches_synchronously(extra_models=[]):
-    print('getting models for prediction')
+    LOGGER.info('Getting models for prediction')
     asyncio.get_event_loop().run_until_complete(warm_model_caches(extra_models))
-    print('done getting models for prediction')
+    LOGGER.info('Done getting models for prediction')
 
 
 def historical_model_name(model_date):
     return f'historical/{model_date.strftime("%Y-%m")}/{model_date.isoformat()}'
 
 
-@backoff.on_exception(backoff.expo,
-                      Exception,
-                      on_backoff=log_exception)
+@backoff.on_exception(backoff.expo, Exception, on_backoff=log_exception)
 async def warm_model_caches(extra_models=[]):
     models = get_comparative_models() + extra_models
     model_fetches = [_fetch_all('latest')]
@@ -60,21 +63,12 @@ async def fetch_models_periodically():
         await warm_model_caches()
 
 
-def _fetch_model(id, bucket, model_path):
-    LOGGER.debug(f'fetching: {model_path}')
-    with BytesIO() as in_memory_file:
-        bucket.download_fileobj(model_path, in_memory_file)
-        in_memory_file.seek(0)
-        LOGGER.debug(f'done fetching {model_path}')
-        return id, pickle.load(in_memory_file)
-
-
 async def _fetch_all(time_span):
     bucket = await asyncio.get_event_loop().run_in_executor(None, _bucket_for_environment)
 
     def _as_path(cluster_id):
         cluster_id_string = str(cluster_id)
-        return cluster_id_string, f'models/{time_span}/{MODEL_FILE_PREFIX}{cluster_id_string}'
+        return cluster_id_string, f'{MODELS_DIR_ROOT}/{time_span}/{MODEL_FILE_NAME_PREFIX}{cluster_id_string}'
 
     async def _check_exists(id, path):
         return id, path, await asyncio.get_event_loop().run_in_executor(None, _model_exists_at_path, bucket, path)
@@ -98,22 +92,31 @@ async def _fetch_all(time_span):
     return time_span, dict(models)
 
 
+def _fetch_model(id, bucket, model_path):
+    LOGGER.debug(f'Fetching model: {model_path}')
+    with BytesIO() as in_memory_file:
+        bucket.download_fileobj(model_path, in_memory_file)
+        in_memory_file.seek(0)
+        LOGGER.debug(f'Done fetching model {model_path}')
+        return id, pickle.load(in_memory_file)
+
+
 def put_all(models):
     bucket = _bucket_for_environment()
 
-    dated_path = 'models/' + historical_model_name(date.today()) + '/'
+    dated_path = f'{MODELS_DIR_ROOT}/{historical_model_name(date.today())}'
 
     _delete_models_in_path(bucket, dated_path)
-    _delete_models_in_path(bucket, MODEL_LATEST_PATH)
+    _delete_models_in_path(bucket, MODELS_DIR_LATEST)
 
     for cluster_id, model in models.items():
         model_serialized = pickle.dumps(model)
-        model_path = f'{MODEL_FILE_PREFIX}{cluster_id}'
+        model_file_name = f'{MODEL_FILE_NAME_PREFIX}{cluster_id}'
 
-        LOGGER.info(f'Loading {model_path} into {bucket.name}')
+        LOGGER.info(f'Loading {model_file_name} into {bucket.name}')
 
-        bucket.put_object(Body=model_serialized, Key=f'{MODEL_LATEST_PATH}{model_path}')
-        bucket.put_object(Body=model_serialized, Key=f'{dated_path}{model_path}')
+        bucket.put_object(Body=model_serialized, Key=f'{MODELS_DIR_LATEST}/{model_file_name}')
+        bucket.put_object(Body=model_serialized, Key=f'{dated_path}/{model_file_name}')
 
 
 def _model_exists_at_path(bucket, path):
@@ -134,7 +137,7 @@ def _delete_models_in_path(bucket, path):
     def _convert_to_delete_syntax(object_summary):
         return {'Key': object_summary.key}
 
-    existing_models = bucket.objects.filter(Prefix=path)
+    existing_models = bucket.objects.filter(Prefix=f'{path}/')
     models_to_delete = list(map(_convert_to_delete_syntax, existing_models))
 
     if models_to_delete:
@@ -144,7 +147,7 @@ def _delete_models_in_path(bucket, path):
 def _bucket_for_environment():
     s3 = auth_provider.authorized_s3_resource()
     environment = os.environ.get('SCOS_ENV', 'dev')
-    return s3.Bucket(environment + '-parking-prediction')
+    return s3.Bucket(f'{environment}-parking-prediction')
 
 
 def get_comparative_models():

@@ -2,7 +2,8 @@
 This is a project to predict parking meter availability for ParkMobile.
 
 - Environment: Python 3.8
-- Dependencies are captured in the project's [`Pipfile`](Pipfile).
+- Dependencies are captured in the project's [`pyproject.toml`](pyproject.toml)
+  file.
 
 ## Model Information
 The available parking model is really a *set* of models, trained separately for
@@ -15,7 +16,7 @@ for the models trained and utilized for forecasting in this repository.
 
 ### Model I/O
 The availability prediction models expect to receive a list of 32 features
-```python
+```
     [tod_1, tod_2, …, tod_27, dow_1, …, dow_5]
 ```
 where
@@ -24,9 +25,9 @@ where
     and
   - `dow_1` through `dow_5` represent a one-hot encoded day of the week between
     Monday and Saturday.
-Both one-hot encodings represent the first value of their respective categorical
-variables (that is, 8:00 AM–8:30 AM for the former and Monday for the latter) as
-a zero vector to avoid perfect multicollinearity.
+Both one-hot encodings represent the first value of their respective
+categorical variables (that is, 8:00 AM–8:30 AM for the former and Monday for
+the latter) as a zero vector to avoid perfect multicollinearity.
 
 ### Model-Related Files
   - `app/meter_configs/zone_cluster16_short_north_downtown_15_19.csv`: Contains
@@ -40,7 +41,7 @@ a zero vector to avoid perfect multicollinearity.
     retrieved from S3 by `app/model_provider.py` is used to generate parking
     availability predictions.
 
-## Local development
+## Getting Started
 ### Environment Setup
 #### Install Python dependencies
 ```bash
@@ -67,3 +68,37 @@ poetry run quart run
 ```bash
 poetry run pytest
 ```
+
+### Notes for Data Scientists
+This repository has been architected in such a way there are only a few places
+where changes need to be made in order to upgrade the parking availability
+prediction model. These files are as follows:
+- the `app.model` Python module. This is where you should implement all feature
+  engineering code, model implementation code, etc. Specifically, the following
+  classes must be defined
+  - `ModelFeatures`: A `pydantic` model specifying all of the features expected
+    by your model.
+    - This class must also provide a static `from_request` method for
+      converting `APIPredictionRequest` objects into `ModelFeatures`.
+  - `ParkingAvailabilityPredictor`: This is the actual trained model. It should
+    include a `predict` method that takes a `ModelFeatures` object `features`
+    and returns prediction values as an iterable of `float`s where the `i`-th
+    `float` gives the parking availability prediction (as a probability) for
+    the parking zone with `i`-th ID in `features.zone_id`.
+- the `train.py` script, which contains code to retrieve training data, train a
+  model, compare its performance to its recent predecessors, and upload
+  newly-trained models to cloud storage. When updating the model, changes may
+  be necessary here to control
+  - how features are derived from the retrieved dataset,
+    - Ideally, this would be done by converting dataset records into
+      `PredictionAPIRequest`s and calling `ModelFeatures.from_request` on the
+      requests. If the training dataset diverges from the production data in
+      structure, however, this can be an alternative location for said code.
+  - the core training procedure,
+  - how the model is packaged into a self-contained, serializable object for
+    storage purposes.
+  Other code modifications in `train.py` should only be necessary when a
+  fundamental change has occurred in our data sources, how model performance is
+  evaluated, etc.
+- unit tests for `app.model` in `tests/test_model.py`
+  - These should be largely left unmodified or expanded upon.

@@ -1,6 +1,8 @@
 import asyncio
 import logging
 from datetime import datetime
+from typing import List
+from typing import Union
 
 from pytz import timezone
 from quart import Quart
@@ -11,14 +13,14 @@ from app import model_provider
 from app import now_adjusted
 from app import predictor
 from app import zone_info
-from app.availability_provider import AvailabilityProvider
+from app.fybr_availability_provider import FybrAvailabilityProvider
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
 
 app = Quart(__name__)
 
-app.availability_provider = AvailabilityProvider(
+app.fybr_availability_provider = FybrAvailabilityProvider(
     'wss://streams.smartcolumbusos.com/socket/websocket',
     []
 )
@@ -27,14 +29,14 @@ app.availability_provider = AvailabilityProvider(
 @app.before_serving
 async def startup():
     LOGGER.info('starting API')
-    app.availability_provider = AvailabilityProvider(
+    app.fybr_availability_provider = FybrAvailabilityProvider(
         'wss://streams.smartcolumbusos.com/socket/websocket',
         zone_info.meter_and_zone_list()
     )
     loop = asyncio.get_event_loop()
 
     LOGGER.info('scheduling availability cache to be filled from stream')
-    app.availability_streamer = loop.create_task(app.availability_provider.handle_websocket_messages())
+    app.fybr_availability_streamer = loop.create_task(app.fybr_availability_provider.handle_websocket_messages())
     LOGGER.info('scheduling model cache to be re-warmed periodically')
     app.model_fetcher = loop.create_task(model_provider.fetch_models_periodically())
     LOGGER.info('finished starting API')
@@ -46,8 +48,8 @@ async def startup():
 
 @app.after_serving
 async def shutdown():
+    app.fybr_availability_streamer.cancel()
     app.model_fetcher.cancel()
-    app.availability_streamer.cancel()
 
 
 @app.route('/healthcheck')
@@ -58,37 +60,41 @@ async def healthcheck():
 @app.route('/api/v1/predictions')
 async def predictions():
     now = now_adjusted.adjust(datetime.now(timezone('US/Eastern')))
-    zoneParam = request.args.get('zone_ids')
-    if zoneParam != None:
-        zone_ids = zoneParam.split(',')
+    zone_ids = _parse_zone_ids(request.args.get('zone_ids'))
+
+    availability = predictor.predict(now, zone_ids)
+
+    prediction_transforms = [
+        _override_availability_predictions_with_known_values,
+        predictor.to_api_format,
+        jsonify
+    ]
+    for transform in prediction_transforms:
+        availability = transform(availability)
+
+    return availability
+
+
+def _parse_zone_ids(request_zone_ids_field) -> Union[List[str], str]:
+    if (zone_param := request_zone_ids_field) is not None:
+        zone_ids = zone_param.split(',')
     else:
         zone_ids = 'All'
-
-    prediction_index = predictor.predict_as_index(now, zone_ids)
-    availability_index = app.availability_provider.get_all_availability()
-
-    predictions_and_availability = _merge_existing(prediction_index, availability_index)
-    predictions_and_availability_formatted = predictor.predict_as_api_format(predictions_and_availability)
-
-    return jsonify(predictions_and_availability_formatted)
+    return zone_ids
 
 
-def _merge_existing(updatee, updator):
-    for key, value in updator.items():
-        if key in updatee:
-            updatee[key] = value
+def _override_availability_predictions_with_known_values(predictions):
+    sensor_data = app.fybr_availability_provider.get_all_availability()
 
-    return updatee
+    for key in predictions.keys() & sensor_data.keys():
+        predictions[key] = sensor_data[key]
+    return predictions
 
 
 @app.route('/api/v0/predictions')
 async def predictions_comparative():
     now = now_adjusted.adjust(datetime.now(timezone('US/Eastern')))
-    zoneParam = request.args.get('zone_ids')
-    if zoneParam != None:
-        zone_ids = zoneParam.split(',')
-    else:
-        zone_ids = 'All'
+    zone_ids = _parse_zone_ids(request.args.get('zone_ids'))
 
     results = predictor.predict_with(model_provider.get_comparative_models(), now, zone_ids)
     return jsonify(results)
@@ -96,7 +102,7 @@ async def predictions_comparative():
 
 @app.route('/api/v1/availability')
 async def availability():
-    return jsonify(app.availability_provider.get_all_availability())
+    return jsonify(app.fybr_availability_provider.get_all_availability())
 
 
 if __name__ == '__main__':

@@ -62,7 +62,7 @@ if __name__ == "__main__":
         writer.writeheader()
         while semihour_cursor < window_end:
             semihour_cursor = semihour_cursor + timedelta(minutes=30)
-            prediction_output = predictor.predict(semihour_cursor, 'All', model)
+            prediction_output = predictor.predict_formatted(semihour_cursor, 'All', model)
             _annotate_predictions(prediction_output, datetime.strftime(semihour_cursor, "%Y-%m-%d %H:%M:%S"), report_run, model)
             if prediction_output:
                 for prediction in prediction_output:

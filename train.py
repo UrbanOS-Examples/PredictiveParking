@@ -3,6 +3,7 @@ import configparser
 import getpass
 import logging
 import os
+import sys
 from dataclasses import InitVar
 from dataclasses import dataclass
 from datetime import date
@@ -18,7 +19,6 @@ from prometheus_client import Gauge
 from prometheus_client import push_to_gateway
 from pytz import timezone
 from sklearn.neural_network import MLPRegressor
-from tqdm import tqdm
 
 from app import model_provider
 from app import now_adjusted
@@ -27,6 +27,8 @@ from app import zone_info
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
+if sys.stdout.isatty():
+    LOGGER.addHandler(logging.StreamHandler(sys.stdout))
 
 DIRNAME = Path(__file__).parent.absolute()
 
@@ -61,21 +63,17 @@ def main():
 
 
 def _get_database_config():
-    config_parser = configparser.RawConfigParser()
-    config_parser.read(DIRNAME / 'app/train.config')
+    config = configparser.RawConfigParser()
+    config.read(DIRNAME / 'app/train.config')
 
-    environment = os.getenv('SCOS_ENV', default='dev')
-    url = os.getenv('SQL_SERVER_URL',
-                    default=config_parser.get(environment, 'mssql_url'))
-    database = os.getenv('SQL_SERVER_DATABASE',
-                         default=config_parser.get(environment, 'mssql_db_name'))
-    username = os.getenv('SQL_SERVER_USERNAME',
-                         default=config_parser.get(environment, 'mssql_db_user'))
-    password = os.getenv('SQL_SERVER_PASSWORD')
-    if password is None:
-        password = getpass.getpass()
-
-    return SqlServerConfig(url, database, username, password)
+    smrt_environment = os.getenv('SCOS_ENV', default='dev')
+    sql_password = os.getenv('SQL_SERVER_PASSWORD') or getpass.getpass()
+    return SqlServerConfig(
+        server=os.getenv('SQL_SERVER_URL', config.get(smrt_environment, 'mssql_url')),
+        database=os.getenv('SQL_SERVER_DATABASE', config.get(smrt_environment, 'mssql_db_name')),
+        uid=os.getenv('SQL_SERVER_USERNAME', config.get(smrt_environment, 'mssql_db_user')),
+        pwd=sql_password
+    )
 
 
 def _get_occupancy_data_from_database(database_config):
@@ -117,14 +115,14 @@ def _sql_read(database_config, sql_query):
         return pd.read_sql_query(sql_query, conn)
 
 
-def _train_models(occupancy_dataframe):
+def _train_models(occupancy_dataframe: pd.DataFrame):
     zone_cluster = zone_info.zone_cluster()
 
     cleaned_occupancy_dataframe = _remove_unoccupied_timeslots(occupancy_dataframe)
 
     models = {}
 
-    for cluster_id in tqdm(zone_info.cluster_ids()):
+    for cluster_id in zone_info.cluster_ids():
         LOGGER.info(f'Processing cluster ID {cluster_id}')
 
         zones_in_cluster = zone_cluster[zone_cluster['clusterID'] == cluster_id].zoneID.astype('str').values
