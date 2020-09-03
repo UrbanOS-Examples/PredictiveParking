@@ -112,7 +112,7 @@ def _sql_read(database_config, sql_query):
     LOGGER.debug('Performing DB read with spec of %s', database_config.__dict__)
 
     with pyodbc.connect(**database_config.__dict__) as conn:
-        return pd.read_sql_query(sql_query, conn)
+        return pd.concat(list(pd.read_sql_query(sql_query, conn, chunksize=10 ** 5)))
 
 
 def _train_models(occupancy_dataframe: pd.DataFrame):
