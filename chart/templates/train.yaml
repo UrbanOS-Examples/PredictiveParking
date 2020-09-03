@@ -37,4 +37,4 @@ spec:
             - name: VAULT_CREDENTIALS_KEY
               value: parking_prediction_train
             resources:
-{{ toYaml .Values.resources | indent 10 }}
+{{ toYaml .Values.resources | indent 14 }}
