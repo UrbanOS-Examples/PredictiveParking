@@ -22,7 +22,7 @@ if sys.stdout.isatty():
 TTL_HOURS = 12
 TTL_SECONDS = TTL_HOURS * 60 * 60
 
-MODELS_DIR_ROOT = 'models'
+MODELS_DIR_ROOT = 'test_drmrd_models'
 MODELS_DIR_LATEST = f'{MODELS_DIR_ROOT}/latest'
 MODEL_FILE_NAME_PREFIX = 'mlp_shortnorth_downtown_cluster'
 

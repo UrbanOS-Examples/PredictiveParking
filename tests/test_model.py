@@ -1,6 +1,7 @@
 import datetime as dt
 import warnings
 from collections import defaultdict
+from typing import Iterable
 from unittest.mock import patch
 
 import hypothesis.strategies as st
@@ -39,7 +40,9 @@ VALID_ZONE_IDS = st.lists(
 )
 def test_ModelFeatures_can_be_derived_from_prediction_APIPredictionRequest_during_hours_of_operation(timestamp, zone_ids):
     prediction_request = APIPredictionRequest(timestamp=timestamp, zone_ids=zone_ids)
-    assert isinstance(ModelFeatures.from_request(prediction_request), ModelFeatures)
+    samples_batch = ModelFeatures.from_request(prediction_request)
+    assert isinstance(samples_batch, Iterable)
+    assert all(isinstance(sample, ModelFeatures) for sample in samples_batch)
 
 
 @patch('app.model.model_provider')
@@ -49,9 +52,10 @@ def test_ModelFeatures_can_be_derived_from_prediction_APIPredictionRequest_durin
 )
 def test_ParkingAvailabilityPredictor_returns_one_prediction_per_valid_zone_id(model_provider, timestamp, zone_ids):
     prediction_request = APIPredictionRequest(timestamp=timestamp, zone_ids=zone_ids)
-    features = ModelFeatures.from_request(prediction_request)
+    samples_batch = ModelFeatures.from_request(prediction_request)
+    sample = samples_batch[0]
 
-    number_of_features = len(features.dayofweek_onehot) + len(features.semihour_onehot)
+    number_of_features = len(sample.dayofweek_onehot) + len(sample.semihour_onehot)
     common_model = MLPRegressor((1,), max_iter=1, tol=1e100)
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
@@ -61,5 +65,5 @@ def test_ParkingAvailabilityPredictor_returns_one_prediction_per_valid_zone_id(m
 
     predictor = ParkingAvailabilityPredictor()
     model_provider.get_all.assert_called()
-    predictions = predictor.predict(features)
+    predictions = predictor.predict(samples_batch)
     assert set(predictions.keys()) == set(zone_ids)

@@ -4,6 +4,7 @@ that model takes
 """
 from abc import ABC
 from abc import abstractmethod
+from typing import ForwardRef
 from typing import List
 from typing import Mapping
 
@@ -28,15 +29,18 @@ TOTAL_SEMIHOURS = 2 * (HOURS_END - HOURS_START).hours + abs(HOURS_END.minute - H
 TOTAL_ENFORCEMENT_DAYS = 7 - len(UNENFORCED_DAYS)
 
 
+ModelFeatures = ForwardRef('ModelFeatures')
+
+
 class Predictor(ABC):
     """An abstract base class for trained predictive models"""
     @abstractmethod
-    def predict(self, data: 'ModelFeatures') -> List[APIPrediction]:
+    def predict(self, data: ModelFeatures) -> List[APIPrediction]:
         ...
 
 
 class ModelFeatures(BaseModel):
-    zone_ids: List[str]
+    zone_id: str
     semihour_onehot: conlist(int,
                              min_items=TOTAL_SEMIHOURS - 1,
                              max_items=TOTAL_SEMIHOURS - 1)
@@ -48,13 +52,15 @@ class ModelFeatures(BaseModel):
     def one_hot_encoded(cls, feature):
         number_of_ones = (np.array(feature) == 1).sum()
         number_of_zeros = (np.array(feature) == 0).sum()
-        assert number_of_ones + number_of_zeros == len(feature)
-        assert number_of_ones <= 1
+        assert number_of_ones + number_of_zeros == len(feature), \
+            'Input should consist solely of 0s and 1s.'
+        assert number_of_ones <= 1, \
+            'Input must contain at most one 1.'
         return feature
 
     @staticmethod
     @validate_arguments
-    def from_request(request: APIPredictionRequest):
+    def from_request(request: APIPredictionRequest) -> List[ModelFeatures]:
         """
         Convert a prediction request to the input format expected by a parking
         availability model.
@@ -66,7 +72,7 @@ class ModelFeatures(BaseModel):
 
         Returns
         -------
-        ModelFeatures
+        list of ModelFeatures
             A set of features that can be passed into the `predict` method of a
             `ParkingAvailabilityPredictor`.
         """
@@ -84,14 +90,13 @@ class ModelFeatures(BaseModel):
         dayofweek_to_index = {day.value: (enforcement_day_index := enforcement_day_index + 1)
                               for day in DAY_OF_WEEK if day not in UNENFORCED_DAYS}
 
-        day_index = timestamp.weekday()
-        dayofweek_onehot[dayofweek_to_index[day_index]] = 1
+        return [ModelFeatures(zone_id=zone_id,
+                              semihour_onehot=semihour_onehot.astype(int).tolist(),
+                              dayofweek_onehot=dayofweek_onehot.astype(int).tolist())
+                for zone_id in request.zone_ids]
 
-        return ModelFeatures(
-            zone_ids=request.zone_ids,
-            semihour_onehot=semihour_onehot[1:],
-            dayofweek_onehot=dayofweek_onehot[1:]
-        )
+
+ModelFeatures.update_forward_refs()
 
 
 class ParkingAvailabilityPredictor(Predictor):
@@ -100,18 +105,20 @@ class ParkingAvailabilityPredictor(Predictor):
         self._location_models: Mapping[str, MLPRegressor] = model_provider.get_all(model_tag)
 
     @validate_arguments
-    def predict(self, features: ModelFeatures) -> Mapping[str, float]:
+    def predict(self, samples_batch: List[ModelFeatures]) -> Mapping[str, float]:
+        requested_zone_ids = [sample.zone_id for sample in samples_batch]
         cluster_ids = (zone_info.zone_cluster()
                                 .assign(zoneID=lambda df: df.zoneID.astype(str))
                                 .set_index('zoneID')
-                                .loc[features.zone_ids, 'clusterID']
+                                .loc[requested_zone_ids, 'clusterID']
                                 .map(str)
                                 .tolist())
-        regressor_feature_array = np.asarray(
-            features.semihour_onehot + features.dayofweek_onehot
-        ).reshape(1, -1)
+        regressor_feature_array = np.asarray([
+            sample.semihour_onehot + sample.dayofweek_onehot
+            for sample in samples_batch
+        ])
         return {
             zone_id: self._location_models[cluster_id]
                          .predict(regressor_feature_array)[0]
-            for zone_id, cluster_id in zip(features.zone_ids, cluster_ids)
+            for zone_id, cluster_id in zip(requested_zone_ids, cluster_ids)
         }
