@@ -6,7 +6,7 @@ from contextlib import contextmanager
 
 from tests.fake_websocket_server import create_fake_server, update_event
 from app import app
-from app.fybr_availability_provider import FybrAvailabilityProvider
+from app.fybr.availability_provider import FybrAvailabilityProvider
 
 pytestmark = pytest.mark.asyncio
 

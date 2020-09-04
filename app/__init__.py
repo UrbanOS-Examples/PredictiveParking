@@ -13,7 +13,7 @@ from app import model_provider
 from app import now_adjusted
 from app import predictor
 from app import zone_info
-from app.fybr_availability_provider import FybrAvailabilityProvider
+from app.fybr.availability_provider import FybrAvailabilityProvider
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)

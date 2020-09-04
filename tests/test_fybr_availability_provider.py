@@ -7,7 +7,7 @@ from mockito import mock
 from mockito import patch
 from mockito import unstub
 
-from app.fybr_availability_provider import FybrAvailabilityProvider
+from app.fybr.availability_provider import FybrAvailabilityProvider
 from tests.fake_websocket_server import create_fake_server
 from tests.fake_websocket_server import update_event
 
