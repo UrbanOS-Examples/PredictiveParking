@@ -63,7 +63,7 @@ def test_ParkingAvailabilityPredictor_returns_one_prediction_per_valid_zone_id(m
     stored_models = defaultdict(lambda: common_model)
     model_provider.get_all.return_value = stored_models
 
-    predictor = ParkingAvailabilityPredictor()
+    predictor = ParkingAvailabilityPredictor.from_artifact()
     model_provider.get_all.assert_called()
     predictions = predictor.predict(samples_batch)
     assert set(predictions.keys()) == set(zone_ids)
