@@ -23,7 +23,7 @@ from app import now_adjusted
 from app import predictor
 from app.constants import DAY_OF_WEEK
 from app.constants import UNENFORCED_DAYS
-from app.model import ParkingAvailabilityPredictor
+from app.model import ParkingAvailabilityModel
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
@@ -59,7 +59,7 @@ def main():
         print(occupancy_dataframe.index)
         occupancy_dataframe.reset_index().to_feather(occupancy_data_cache_path)
 
-    model = ParkingAvailabilityPredictor()
+    model = ParkingAvailabilityModel()
 
     model.train(
         (occupancy_dataframe

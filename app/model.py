@@ -42,8 +42,8 @@ TOTAL_ENFORCEMENT_DAYS = 7 - len(UNENFORCED_DAYS)
 ModelFeatures = ForwardRef('ModelFeatures')
 
 
-class Predictor(ABC):
-    """An abstract base class for trained predictive models"""
+class Model(ABC):
+    """An abstract base class for ML models."""
 
     @abstractmethod
     def train(self, training_data: pd.DataFrame) -> None:
@@ -89,7 +89,7 @@ class ModelFeatures(BaseModel):
         -------
         list of ModelFeatures
             A set of features that can be passed into the `predict` method of a
-            `ParkingAvailabilityPredictor`.
+            `ParkingAvailabilityModel`.
         """
         timestamp = request.timestamp
 
@@ -114,7 +114,7 @@ class ModelFeatures(BaseModel):
 ModelFeatures.update_forward_refs()
 
 
-class ParkingAvailabilityPredictor(Predictor):
+class ParkingAvailabilityModel(Model):
     def __init__(self):
         super().__init__()
         self._location_models: MutableMapping[str, MLPRegressor] = {}
