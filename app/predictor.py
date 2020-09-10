@@ -36,7 +36,9 @@ def predict(input_datetime, zone_ids='All', model_tag='latest'):
         predictions = {}
     else:
         try:
-            predictions = ParkingAvailabilityModel.from_artifact(model_tag).predict(
+            predictions = ParkingAvailabilityModel.from_artifact(
+                model_tag
+            ).predict(
                 ModelFeatures.from_request(
                     APIPredictionRequest(
                         timestamp=input_datetime,

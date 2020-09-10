@@ -93,17 +93,15 @@ class ModelFeatures(BaseModel):
         """
         timestamp = request.timestamp
 
-        semihour_onehot = TOTAL_SEMIHOURS * [0]
-        semihour_index = min(
-            2 * (timestamp.hour - HOURS_START.hour) + timestamp.minute // 30,
-            len(semihour_onehot) - 1
-        )
-        semihour_onehot[semihour_index] = 1
+        hour_onehot = np.array([timestamp.hour == hour for hour in range(8, 22)])
+        minute_bin_onehot = np.array([30 * minute_bin <= timestamp.minute < 30 * (minute_bin + 1) for minute_bin in range(2)])
+        semihour_onehot = (hour_onehot[:, None] & np.array(minute_bin_onehot)).flatten()[1:]
 
-        dayofweek_onehot = TOTAL_ENFORCEMENT_DAYS * [0]
-        enforcement_day_index = -1
-        dayofweek_to_index = {day.value: (enforcement_day_index := enforcement_day_index + 1)
-                              for day in DAY_OF_WEEK if day not in UNENFORCED_DAYS}
+        enforcement_days = [day.value for day in DAY_OF_WEEK if day not in UNENFORCED_DAYS]
+        dayofweek_onehot = np.array([
+            enforcement_days.index(timestamp.weekday()) == day_index
+            for day_index in range(TOTAL_ENFORCEMENT_DAYS)
+        ])[1:]
 
         return [ModelFeatures(zone_id=zone_id,
                               semihour_onehot=semihour_onehot.astype(int).tolist(),
@@ -127,13 +125,17 @@ class ParkingAvailabilityModel(Model):
                     dayofweek=lambda df: df.semihour.dt.dayofweek.astype('category'),
                     semihour=lambda df: pd.Series(
                         zip(df.semihour.dt.hour, df.semihour.dt.minute),
-                        dtype='category', index=df.index))
+                        dtype='category', index=df.index
+                    )
+                )
                 .pipe(
                     lambda df: (
                         df.zone_id,
                         pd.get_dummies(df.loc[:, ['semihour', 'dayofweek']],
                                        drop_first=True),
-                        df.available_rate))
+                        df.available_rate
+                    )
+                )
         )
 
         for zone in zone_id.unique():
