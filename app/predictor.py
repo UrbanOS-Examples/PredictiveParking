@@ -36,9 +36,10 @@ def predict(input_datetime, zone_ids='All', model_tag='latest'):
         predictions = {}
     else:
         try:
-            predictions = ParkingAvailabilityModel.from_artifact(
+            model = ParkingAvailabilityModel.from_artifact(
                 model_tag
-            ).predict(
+            )
+            predictions = model.predict(
                 ModelFeatures.from_request(
                     APIPredictionRequest(
                         timestamp=input_datetime,
@@ -93,7 +94,8 @@ def predict_formatted(input_datetime, zone_ids='All', model='latest'):
     --------
     APIPrediction : Defines the current prediction API record format
     """
-    return to_api_format(predict(input_datetime, zone_ids, model))
+    predictions = predict(input_datetime, zone_ids, model)
+    return to_api_format(predictions)
 
 
 def to_api_format(predictions):

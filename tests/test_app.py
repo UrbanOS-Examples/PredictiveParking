@@ -1,17 +1,19 @@
-import pytest
 import json
-import websockets
-from freezegun import freeze_time
 from contextlib import contextmanager
 
-from tests.fake_websocket_server import create_fake_server, update_event
+import pytest
+import websockets
+from freezegun import freeze_time
+
 from app import app
 from app.fybr.availability_provider import FybrAvailabilityProvider
+from tests.fake_websocket_server import create_fake_server
+from tests.fake_websocket_server import update_event
 
 pytestmark = pytest.mark.asyncio
 
 
-async def test_no_zone_id_param_returns_all_zones(client):
+async def test_no_zone_id_param_returns_all_zones(client, fake_model_files_in_s3):
     with freeze_time('2020-01-14 14:00:00'):
         response = await client.get('/api/v1/predictions')
         data = await response.get_data()
@@ -134,15 +136,12 @@ async def test_app_uses_availability_if_its_there(client):
 
     assert response.status_code == 200
     data = json.loads(response_data)
-    assert data == [
-        {
-            'availabilityPrediction': 0.4312,
-            'zoneId': zone_without_availability_data,
-            'supplierID': '970010'
-        },
-        {
-            'availabilityPrediction': 0.75,
-            'zoneId': zone_with_availability_data,
-            'supplierID': '970010'
-        },
-    ]
+    prediction_for_zone_with_availability_data = [
+        datum for datum in data
+        if datum['zoneId'] == zone_with_availability_data
+    ][0]
+    assert prediction_for_zone_with_availability_data == {
+        'availabilityPrediction': 0.75,
+        'zoneId': zone_with_availability_data,
+        'supplierID': '970010'
+    }

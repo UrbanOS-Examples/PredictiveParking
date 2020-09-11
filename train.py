@@ -56,7 +56,6 @@ def main():
         occupancy_dataframe = pd.read_feather(occupancy_data_cache_path)
     else:
         occupancy_dataframe = _get_occupancy_data_from_database(_get_database_config())
-        print(occupancy_dataframe.index)
         occupancy_dataframe.reset_index().to_feather(occupancy_data_cache_path)
 
     model = ParkingAvailabilityModel()
@@ -69,7 +68,7 @@ def main():
             .pipe(_remove_times_outside_hours_of_operation))
     )
 
-    model_provider.put_all(model.to_artifact())
+    model_provider.archive(model.to_artifact())
 
     _validate_variance()
 

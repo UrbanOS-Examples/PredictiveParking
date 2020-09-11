@@ -20,7 +20,6 @@ from pydantic import validator
 from sklearn.neural_network import MLPRegressor
 
 from app import model_provider
-from app import zone_info
 from app.constants import DAY_OF_WEEK
 from app.constants import HOURS_END
 from app.constants import HOURS_START
@@ -115,7 +114,22 @@ ModelFeatures.update_forward_refs()
 class ParkingAvailabilityModel(Model):
     def __init__(self):
         super().__init__()
-        self._location_models: MutableMapping[str, MLPRegressor] = {}
+        self._zone_models: MutableMapping[str, MLPRegressor] = {}
+        self._supported_zones = []
+
+    def __getstate__(self):
+        return {
+            'zone_models': self._zone_models,
+            'supported_zones': self.supported_zones
+        }
+
+    def __setstate__(self, state):
+        self._zone_models = state['zone_models']
+        self._supported_zones = state['supported_zones']
+
+    @property
+    def supported_zones(self):
+        return self._supported_zones
 
     def train(self, training_data: pd.DataFrame) -> None:
         zone_id, X, y = (
@@ -138,7 +152,8 @@ class ParkingAvailabilityModel(Model):
                 )
         )
 
-        for zone in zone_id.unique():
+        self._supported_zones = zone_id.unique()
+        for zone in self._supported_zones:
             LOGGER.info(f'Processing zone {zone}')
             X_cluster = X[zone_id == zone]
             y_cluster = y[zone_id == zone]
@@ -152,34 +167,29 @@ class ParkingAvailabilityModel(Model):
 
             mlp = MLPRegressor(hidden_layer_sizes=(50, 50), activation='relu')
             mlp.fit(X_cluster, y_cluster)
-            self._location_models[str(int(zone))] = mlp
+            self._zone_models[str(int(zone))] = mlp
 
-        LOGGER.info(f'Successfully trained {len(self._location_models)} models')
+        LOGGER.info(f'Successfully trained {len(self._zone_models)} models')
 
     @validate_arguments
     def predict(self, samples_batch: List[ModelFeatures]) -> Mapping[str, float]:
-        requested_zone_ids = [sample.zone_id for sample in samples_batch]
-        cluster_ids = (zone_info.zone_cluster()
-                                .assign(zoneID=lambda df: df.zoneID.astype(str))
-                                .set_index('zoneID')
-                                .loc[requested_zone_ids, 'clusterID']
-                                .map(str)
-                                .tolist())
+        requested_zone_ids = [sample.zone_id for sample in samples_batch
+                              if sample.zone_id in self.supported_zones]
+
         regressor_feature_array = np.asarray([
             sample.semihour_onehot + sample.dayofweek_onehot
             for sample in samples_batch
         ])
         return {
-            zone_id: self._location_models[cluster_id]
-                         .predict(regressor_feature_array)[0]
-            for zone_id, cluster_id in zip(requested_zone_ids, cluster_ids)
+            zone_id: self._zone_models[zone_id]
+                         .predict(regressor_feature_array)
+                         .clip(0, 1)[0]
+            for zone_id in requested_zone_ids
         }
 
     @classmethod
     def from_artifact(cls, model_tag='latest'):
-        predictor = cls()
-        predictor._location_models = model_provider.get_all(model_tag)
-        return predictor
+        return model_provider.get_all(model_tag)
 
     def to_artifact(self):
-        return self._location_models
+        return self._zone_models
