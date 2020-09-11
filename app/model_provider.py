@@ -30,13 +30,13 @@ MODELS_DIR_LATEST = f'{MODELS_DIR_ROOT}/latest'
 MODELS = {}
 
 
-def get_all(model_tag='latest') -> Optional[ParkingAvailabilityModel]:
+def provide(model_tag='latest') -> Optional[ParkingAvailabilityModel]:
     return MODELS.get(model_tag, None)
 
 
-def warm_model_caches_synchronously(extra_models=[]):
+def warm_model_caches_synchronously(extra_model_tags=[]):
     LOGGER.info('Getting models for prediction')
-    asyncio.get_event_loop().run_until_complete(warm_model_caches(extra_models))
+    asyncio.get_event_loop().run_until_complete(warm_model_caches(extra_model_tags))
     LOGGER.info('Done getting models for prediction')
 
 

@@ -159,7 +159,7 @@ class ParkingAvailabilityModel(Model):
         )
 
         self._supported_zones = zone_id.unique()
-        for zone in self._supported_zones:
+        for zone in self.supported_zones:
             LOGGER.info(f'Processing zone {zone}')
             X_cluster = X[zone_id == zone]
             y_cluster = y[zone_id == zone]
@@ -186,10 +186,3 @@ class ParkingAvailabilityModel(Model):
                          .clip(0, 1)[0]
             for zone_id in requested_zone_ids
         }
-
-    @classmethod
-    def from_artifact(cls, model_tag='latest'):
-        return model_provider.get_all(model_tag)
-
-    def to_artifact(self):
-        return self._zone_models

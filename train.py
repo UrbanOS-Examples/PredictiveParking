@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import configparser
 import getpass
 import logging
@@ -51,12 +52,7 @@ class SqlServerConfig:
 
 
 def main():
-    occupancy_data_cache_path = Path('/tmp/occupancy_data.feather')
-    if occupancy_data_cache_path.exists():
-        occupancy_dataframe = pd.read_feather(occupancy_data_cache_path)
-    else:
-        occupancy_dataframe = _get_occupancy_data_from_database(_get_database_config())
-        occupancy_dataframe.reset_index().to_feather(occupancy_data_cache_path)
+    occupancy_dataframe = _get_occupancy_data_from_database(_get_database_config())
 
     model = ParkingAvailabilityModel()
 
@@ -68,7 +64,7 @@ def main():
             .pipe(_remove_times_outside_hours_of_operation))
     )
 
-    model_provider.archive(model.to_artifact())
+    model_provider.archive(model)
 
     _validate_variance()
 

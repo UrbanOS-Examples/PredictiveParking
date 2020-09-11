@@ -1,10 +1,10 @@
 import pandas as pd
 from pydantic import ValidationError
 
+from app import model_provider
 from app.data_formats import APIPrediction
 from app.data_formats import APIPredictionRequest
 from app.model import ModelFeatures
-from app.model import ParkingAvailabilityModel
 
 
 def predict(input_datetime, zone_ids='All', model_tag='latest'):
@@ -36,10 +36,7 @@ def predict(input_datetime, zone_ids='All', model_tag='latest'):
         predictions = {}
     else:
         try:
-            model = ParkingAvailabilityModel.from_artifact(
-                model_tag
-            )
-            predictions = model.predict(
+            predictions = model_provider.provide(model_tag).predict(
                 ModelFeatures.from_request(
                     APIPredictionRequest(
                         timestamp=input_datetime,
