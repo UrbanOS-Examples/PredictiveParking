@@ -164,13 +164,7 @@ class ParkingAvailabilityModel(Model):
             X_cluster = X[zone_id == zone]
             y_cluster = y[zone_id == zone]
 
-            if X_cluster.empty:
-                LOGGER.info(
-                    f'No data available for zone {zone}, not creating model')
-                continue
-
             LOGGER.info(f'Total (row, col) counts: {X_cluster.shape}')
-
             mlp = MLPRegressor(hidden_layer_sizes=(50, 50), activation='relu')
             mlp.fit(X_cluster, y_cluster)
             self._zone_models[str(int(zone))] = mlp
