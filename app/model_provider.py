@@ -6,12 +6,14 @@ import sys
 from datetime import date
 from io import BytesIO
 from itertools import starmap
+from typing import Optional
 
 import backoff
 import botocore
 
 from app import auth_provider
-from app import zone_info
+from app.constants import MODEL_FILE_NAME
+from app.model import ParkingAvailabilityModel
 from app.util import log_exception
 
 LOGGER = logging.getLogger(__name__)
@@ -24,18 +26,17 @@ TTL_SECONDS = TTL_HOURS * 60 * 60
 
 MODELS_DIR_ROOT = 'models'
 MODELS_DIR_LATEST = f'{MODELS_DIR_ROOT}/latest'
-MODEL_FILE_NAME_PREFIX = 'mlp_shortnorth_downtown_cluster'
 
 MODELS = {}
 
 
-def get_all(model='latest'):
-    return MODELS.get(model, {})
+def provide(model_tag='latest') -> Optional[ParkingAvailabilityModel]:
+    return MODELS.get(model_tag, None)
 
 
-def warm_model_caches_synchronously(extra_models=[]):
+def warm_model_caches_synchronously(extra_model_tags=[]):
     LOGGER.info('Getting models for prediction')
-    asyncio.get_event_loop().run_until_complete(warm_model_caches(extra_models))
+    asyncio.get_event_loop().run_until_complete(warm_model_caches(extra_model_tags))
     LOGGER.info('Done getting models for prediction')
 
 
@@ -44,17 +45,14 @@ def historical_model_name(model_date):
 
 
 @backoff.on_exception(backoff.expo, Exception, on_backoff=log_exception)
-async def warm_model_caches(extra_models=[]):
-    models = get_comparative_models() + extra_models
-    model_fetches = [_fetch_all('latest')]
-
-    for model in models:
-        model_fetches.append(_fetch_all(model))
+async def warm_model_caches(extra_model_tags=[]):
+    model_tags = ['latest'] + get_comparative_models() + extra_model_tags
+    model_fetches = [_fetch_all(model_tag) for model_tag in model_tags]
 
     fetched_models = await asyncio.gather(*model_fetches)
 
-    for name, model_dict in fetched_models:
-        MODELS[name] = model_dict
+    for tag, model in fetched_models:
+        MODELS[tag] = model or {}
 
 
 async def fetch_models_periodically():
@@ -63,15 +61,13 @@ async def fetch_models_periodically():
         await warm_model_caches()
 
 
-async def _fetch_all(time_span):
+async def _fetch_all(model_tag):
     bucket = await asyncio.get_event_loop().run_in_executor(None, _bucket_for_environment)
 
-    def _as_path(cluster_id):
-        cluster_id_string = str(cluster_id)
-        return cluster_id_string, f'{MODELS_DIR_ROOT}/{time_span}/{MODEL_FILE_NAME_PREFIX}{cluster_id_string}'
+    model_key = f'{MODELS_DIR_ROOT}/{model_tag}/{MODEL_FILE_NAME}'
 
-    async def _check_exists(id, path):
-        return id, path, await asyncio.get_event_loop().run_in_executor(None, _model_exists_at_path, bucket, path)
+    async def _check_exists(cluster_id, path):
+        return cluster_id, path, await asyncio.get_event_loop().run_in_executor(None, _model_exists_at_path, bucket, path)
 
     def _filter_exists(path_tuple):
         _, _, exists = path_tuple
@@ -80,7 +76,7 @@ async def _fetch_all(time_span):
     async def _model_download(id, path, _exists):
         return await asyncio.get_event_loop().run_in_executor(None, _fetch_model, id, bucket, path)
 
-    model_paths = map(_as_path, zone_info.cluster_ids())
+    model_paths = [('irrelevant, unused id', model_key)]
 
     model_exists_futures = list(starmap(_check_exists, model_paths))
     model_exists = await asyncio.gather(*model_exists_futures)
@@ -89,7 +85,20 @@ async def _fetch_all(time_span):
     model_futures = list(starmap(_model_download, existing_model_paths))
     models = await asyncio.gather(*model_futures)
 
-    return time_span, dict(models)
+    return model_tag, models[0]
+
+
+def _model_exists_at_path(bucket, path):
+    try:
+        LOGGER.debug(f'checking if model exists at {path}')
+        bucket.Object(path).load()
+        LOGGER.debug(f'done checking model exists at {path}')
+        return True
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == '404':
+            return False
+        else:
+            raise e
 
 
 def _fetch_model(id, bucket, model_path):
@@ -98,10 +107,10 @@ def _fetch_model(id, bucket, model_path):
         bucket.download_fileobj(model_path, in_memory_file)
         in_memory_file.seek(0)
         LOGGER.debug(f'Done fetching model {model_path}')
-        return id, pickle.load(in_memory_file)
+        return pickle.load(in_memory_file)
 
 
-def put_all(models):
+def archive(model):
     bucket = _bucket_for_environment()
 
     dated_path = f'{MODELS_DIR_ROOT}/{historical_model_name(date.today())}'
@@ -109,28 +118,11 @@ def put_all(models):
     _delete_models_in_path(bucket, dated_path)
     _delete_models_in_path(bucket, MODELS_DIR_LATEST)
 
-    for cluster_id, model in models.items():
-        model_serialized = pickle.dumps(model)
-        model_file_name = f'{MODEL_FILE_NAME_PREFIX}{cluster_id}'
+    model_serialized = pickle.dumps(model)
 
-        LOGGER.info(f'Loading {model_file_name} into {bucket.name}')
-
-        bucket.put_object(Body=model_serialized, Key=f'{MODELS_DIR_LATEST}/{model_file_name}')
-        bucket.put_object(Body=model_serialized, Key=f'{dated_path}/{model_file_name}')
-
-
-def _model_exists_at_path(bucket, path):
-    try:
-        LOGGER.debug(f'checking if model exists at {path}')
-        s3 = auth_provider.authorized_s3_resource()
-        s3.Object(bucket.name, path).load()
-        LOGGER.debug(f'done checking model exists at {path}')
-        return True
-    except botocore.exceptions.ClientError as e:
-        if e.response['Error']['Code'] == '404':
-            return False
-        else:
-            raise e
+    LOGGER.info(f'Loading {MODEL_FILE_NAME} into {bucket.name}')
+    bucket.put_object(Body=model_serialized, Key=f'{MODELS_DIR_LATEST}/{MODEL_FILE_NAME}')
+    bucket.put_object(Body=model_serialized, Key=f'{dated_path}/{MODEL_FILE_NAME}')
 
 
 def _delete_models_in_path(bucket, path):

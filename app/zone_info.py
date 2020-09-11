@@ -1,9 +1,12 @@
 import json
+import warnings
 from io import BytesIO
 from os import path
 
 import pandas as pd
 import requests
+
+warnings.warn('The zone_info module is no longer in service and will be removed soon™.', DeprecationWarning, stacklevel=2)
 
 DIRNAME = path.dirname(path.abspath(__file__))
 METER_FILE_PATH = path.join(

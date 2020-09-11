@@ -1,12 +1,10 @@
 import datetime as dt
-import warnings
-from collections import defaultdict
-from unittest.mock import patch
+import pickle
+from typing import Iterable
 
 import hypothesis.strategies as st
-import numpy as np
+import joblib
 from hypothesis import given
-from sklearn.neural_network import MLPRegressor
 
 from app import zone_info
 from app.constants import DAY_OF_WEEK
@@ -15,7 +13,6 @@ from app.constants import HOURS_START
 from app.constants import TIME_ZONE
 from app.constants import UNENFORCED_DAYS
 from app.data_formats import APIPredictionRequest
-from app.model import ParkingAvailabilityPredictor
 from app.predictor import ModelFeatures
 
 
@@ -39,27 +36,28 @@ VALID_ZONE_IDS = st.lists(
 )
 def test_ModelFeatures_can_be_derived_from_prediction_APIPredictionRequest_during_hours_of_operation(timestamp, zone_ids):
     prediction_request = APIPredictionRequest(timestamp=timestamp, zone_ids=zone_ids)
-    assert isinstance(ModelFeatures.from_request(prediction_request), ModelFeatures)
+    samples_batch = ModelFeatures.from_request(prediction_request)
+    assert isinstance(samples_batch, Iterable)
+    assert all(isinstance(sample, ModelFeatures) for sample in samples_batch)
 
 
-@patch('app.model.model_provider')
 @given(
     timestamp=DATETIME_DURING_HOURS_OF_OPERATION,
     zone_ids=VALID_ZONE_IDS
 )
-def test_ParkingAvailabilityPredictor_returns_one_prediction_per_valid_zone_id(model_provider, timestamp, zone_ids):
+def test_ParkingAvailabilityModel_returns_one_prediction_per_valid_zone_id(timestamp, zone_ids, fake_model):
     prediction_request = APIPredictionRequest(timestamp=timestamp, zone_ids=zone_ids)
-    features = ModelFeatures.from_request(prediction_request)
+    samples_batch = ModelFeatures.from_request(prediction_request)
 
-    number_of_features = len(features.dayofweek_onehot) + len(features.semihour_onehot)
-    common_model = MLPRegressor((1,), max_iter=1, tol=1e100)
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore')
-        common_model.fit(np.random.rand(1, number_of_features), np.random.rand(1))
-    stored_models = defaultdict(lambda: common_model)
-    model_provider.get_all.return_value = stored_models
-
-    predictor = ParkingAvailabilityPredictor()
-    model_provider.get_all.assert_called()
-    predictions = predictor.predict(features)
+    predictions = fake_model.predict(samples_batch)
     assert set(predictions.keys()) == set(zone_ids)
+
+
+def test_ParkingAvailabilityModel_is_picklable(fake_model):
+    pickle.dumps(fake_model)
+
+
+def test_ParkingAvailabilityModel_unpickles_into_the_same_model(fake_model):
+    pickled_fake_model = pickle.dumps(fake_model)
+    unpickled_pickled_fake_model = pickle.loads(pickled_fake_model)
+    assert joblib.hash(unpickled_pickled_fake_model) == joblib.hash(fake_model)

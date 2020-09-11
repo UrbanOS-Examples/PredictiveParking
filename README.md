@@ -43,18 +43,34 @@ the latter) as a zero vector to avoid perfect multicollinearity.
 
 ## Getting Started
 ### Environment Setup
+#### Install System Dependencies
+The notebooks in this repository rely on `libspatialindex` for certain
+calculations. This library needs to be installed to avoid problems when
+installing the `dev` Python dependencies. On macOS, this can be done through
+Homebrew:
+```bash
+    brew install spatialindex
+```
+
 #### Install Python dependencies
 ```bash
-pip3 install poetry
-poetry install --dev
+    pip3 install poetry
+    poetry install --dev
 ```
 
 #### Install MicroSoft ODBC Driver 17 for SQL Server
 On macOS, this can be done using Homebrew as follows:
 ```bash
-brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
-brew update
-HOMEBREW_NO_ENV_FILTERING=1 ACCEPT_EULA=Y brew install msodbcsql17 mssql-tools
+    brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
+    brew update
+    HOMEBREW_NO_ENV_FILTERING=1 ACCEPT_EULA=Y brew install msodbcsql17 mssql-tools
+```
+
+#### Configure Notebooks
+If you're planning on running the repository's notebooks, you'll want to enable
+IPython widgets to avoid problems.
+```bash
+    poetry run jupyter nbextension enable --py widgetsnbextension
 ```
 
 ### Running the application locally
@@ -80,7 +96,7 @@ prediction model. These files are as follows:
     by your model.
     - This class must also provide a static `from_request` method for
       converting `APIPredictionRequest` objects into `ModelFeatures`.
-  - `ParkingAvailabilityPredictor`: This is the actual trained model. It should
+  - `ParkingAvailabilityModel`: This is the actual trained model. It should
     include a `predict` method that takes a `ModelFeatures` object `features`
     and returns prediction values as an iterable of `float`s where the `i`-th
     `float` gives the parking availability prediction (as a probability) for

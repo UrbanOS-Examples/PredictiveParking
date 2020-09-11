@@ -7,7 +7,7 @@ import backoff
 import websockets
 from dateutil import tz
 
-from app import fybr_availability_tracker
+import app.fybr.availability_tracker as fybr_availability_tracker
 from app.util import log_exception
 
 

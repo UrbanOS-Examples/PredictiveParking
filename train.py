@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import configparser
 import getpass
 import logging
@@ -11,19 +12,19 @@ from datetime import datetime
 from datetime import timedelta
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import pyodbc
 from prometheus_client import CollectorRegistry
 from prometheus_client import Gauge
 from prometheus_client import push_to_gateway
 from pytz import timezone
-from sklearn.neural_network import MLPRegressor
 
 from app import model_provider
 from app import now_adjusted
 from app import predictor
-from app import zone_info
+from app.constants import DAY_OF_WEEK
+from app.constants import UNENFORCED_DAYS
+from app.model import ParkingAvailabilityModel
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
@@ -51,13 +52,19 @@ class SqlServerConfig:
 
 
 def main():
-    database_config = _get_database_config()
+    occupancy_dataframe = _get_occupancy_data_from_database(_get_database_config())
 
-    occupancy_dataframe = _get_occupancy_data_from_database(database_config)
+    model = ParkingAvailabilityModel()
 
-    models = _train_models(occupancy_dataframe)
+    model.train(
+        (occupancy_dataframe
+            .astype({'semihour': 'datetime64[ns]'})
+            .rename(columns={'zone_name': 'zone_id'})
+            .pipe(_remove_unoccupied_timeslots)
+            .pipe(_remove_times_outside_hours_of_operation))
+    )
 
-    model_provider.put_all(models)
+    model_provider.archive(model)
 
     _validate_variance()
 
@@ -112,85 +119,26 @@ def _sql_read(database_config, sql_query):
     LOGGER.debug('Performing DB read with spec of %s', database_config.__dict__)
 
     with pyodbc.connect(**database_config.__dict__) as conn:
-        return pd.concat(list(pd.read_sql_query(sql_query, conn, chunksize=10 ** 5)))
+        return pd.concat(list(pd.read_sql_query(sql_query, conn, chunksize=10 ** 6)), ignore_index=True)
 
 
-def _train_models(occupancy_dataframe: pd.DataFrame):
-    zone_cluster = zone_info.zone_cluster()
-
-    cleaned_occupancy_dataframe = _remove_unoccupied_timeslots(occupancy_dataframe)
-
-    models = {}
-
-    for cluster_id in zone_info.cluster_ids():
-        LOGGER.info(f'Processing cluster ID {cluster_id}')
-
-        zones_in_cluster = zone_cluster[zone_cluster['clusterID'] == cluster_id].zoneID.astype('str').values
-        LOGGER.debug(f'Zones in cluster: {zones_in_cluster}')
-
-        occupancy_for_cluster = cleaned_occupancy_dataframe[
-            cleaned_occupancy_dataframe['zone_name'].isin(zones_in_cluster)
-        ].reset_index(drop=True)
-
-        if occupancy_for_cluster.empty:
-            LOGGER.info(f'No data available for {cluster_id}, not creating model')
-            continue
-
-        occupancy_for_cluster['semihour'] = pd.to_datetime(occupancy_for_cluster['semihour'])
-        occupancy_for_cluster = occupancy_for_cluster.set_index('semihour')
-        occupancy_for_cluster['available_rate'] = 1 - occupancy_for_cluster['occu_cnt_rate']
-        occupancy_for_cluster = occupancy_for_cluster.between_time('08:00', '22:00', include_start=True,
-                                                                   include_end=False)
-        occupancy_for_cluster = occupancy_for_cluster[
-            (occupancy_for_cluster.index.dayofweek != 6)
-        ]
-
-        occupancy_for_cluster['semihour'] = list(
-            zip(
-                occupancy_for_cluster.index.hour,
-                occupancy_for_cluster.index.minute
-            )
-        )
-        occupancy_for_cluster['semihour'] = occupancy_for_cluster.semihour.astype('category')
-        occupancy_for_cluster['dayofweek'] = occupancy_for_cluster.index.dayofweek.astype('category')
-
-        X = pd.DataFrame(occupancy_for_cluster.loc[:, ['semihour', 'dayofweek']])
-        y = occupancy_for_cluster.available_rate
-
-        for col in X.select_dtypes(include='category').columns:
-            add_var = pd.get_dummies(X[col], prefix=col, drop_first=True)
-            X = pd.concat([X, add_var], axis='columns')
-            X.drop(columns=[col], inplace=True)
-        LOGGER.info(f'Total (row, col) counts: {X.shape}')
-
-        mlp = MLPRegressor(hidden_layer_sizes=(50, 50), activation='relu')
-        mlp.fit(X, y)
-
-        models[str(int(cluster_id))] = mlp
-
-    LOGGER.info(f'Successfully trained {len(models)} models')
-
-    return models
+def _remove_unoccupied_timeslots(occupancy_dataframe: pd.DataFrame) -> pd.DataFrame:
+    return occupancy_dataframe.loc[(
+        (occupancy_dataframe.no_data != 1)
+      & (occupancy_dataframe.no_trxn_one_week_flg != 1)
+    )]
 
 
-def _remove_unoccupied_timeslots(occupancy_dataframe):
-    occupancy_dataframe.loc[occupancy_dataframe['no_data'] == 1, 'occu_min_rate'] = np.nan
-    occupancy_dataframe.loc[occupancy_dataframe['no_data'] == 1, 'occu_cnt_rate'] = np.nan
-    occupancy_dataframe.loc[
-        (
-            (occupancy_dataframe['no_trxn_one_week_flg'] == 1)
-            & occupancy_dataframe['occu_min_rate'].notna()
-        ),
-        'occu_min_rate'
-    ] = np.nan
-    occupancy_dataframe.loc[
-        (
-            (occupancy_dataframe['no_trxn_one_week_flg'] == 1)
-            & occupancy_dataframe['occu_cnt_rate'].notna()
-        ),
-        'occu_cnt_rate'
-    ] = np.nan
-    return occupancy_dataframe.dropna(subset=['occu_cnt_rate'])
+def _remove_times_outside_hours_of_operation(occupancy_dataframe: pd.DataFrame) -> pd.DataFrame:
+    enforcement_days = [day.value for day in DAY_OF_WEEK
+                        if day not in UNENFORCED_DAYS]
+    return (
+        occupancy_dataframe
+            .set_index('semihour')
+            .between_time('08:00', '22:00', include_end=False)
+            .reset_index()
+            .loc[lambda df: df.semihour.dt.dayofweek.isin(enforcement_days), :]
+    )
 
 
 def _validate_variance():

@@ -6,6 +6,8 @@ import pendulum
 import pytz
 
 
+MODEL_FILE_NAME = 'mlp_shortnorth_downtown_cluster.pkl'
+
 DAY_OF_WEEK = Enum('DayOfWeek', ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY',
                                  'FRIDAY', 'SATURDAY', 'SUNDAY'], start=0)
 

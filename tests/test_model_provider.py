@@ -1,83 +1,79 @@
 import pickle
 
 import boto3
+import joblib
 import pytest
 from freezegun import freeze_time
 from mockito import kwargs
 from moto import mock_s3
 
 from app import model_provider
+from app.constants import MODEL_FILE_NAME
+from app.model import ParkingAvailabilityModel
 from app.model_provider import MODELS_DIR_LATEST
 from app.model_provider import MODELS_DIR_ROOT
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def setup_all():
     with mock_s3():
-        conn = boto3.resource('s3')
-        bucket = conn.Bucket('dev-parking-prediction')
+        s3 = boto3.resource('s3')
+        bucket = s3.Bucket('dev-parking-prediction')
         bucket.create()
 
-        yield conn, bucket
+        yield s3, bucket
 
 
 @pytest.mark.asyncio
 async def test_warm_is_resilient(when, fake_model_files_in_s3):
     actual_boto3_session = boto3.Session()
-    when(boto3).Session(**kwargs).thenRaise(Exception('this should not crash things')).thenReturn(actual_boto3_session)
+    (when(boto3).Session(**kwargs)
+                .thenRaise(Exception('this should not crash things'))
+                .thenReturn(actual_boto3_session))
     await model_provider.warm_model_caches()
 
 
-def test_train_writes_models_to_s3(setup_all):
-    conn, bucket = setup_all
-
-    models = {
-        '1': 'model 1',
-        '2': 'model 2'
-    }
-
-    with freeze_time('2020-01-14 14:00:00'):
-        model_provider.put_all(models)
-    
-    latest_content = list(bucket.objects.filter(Prefix=MODELS_DIR_LATEST))
-    dated_content = list(bucket.objects.filter(Prefix=f'{MODELS_DIR_ROOT}/historical/2020-01/2020-01-14/'))
-
-    assert len(latest_content) == 2
-    assert len(dated_content) == 2
-
-
-def test_read_and_update_model(setup_all):
+def test_archive_writes_models_to_historical_and_latest_s3_paths(setup_all, fake_model):
     _, bucket = setup_all
 
-    models = {
-        '1': 'model 1',
-        '2': 'model 2'
-    }
+    year, month, day = 2020, 1, 14
+    with freeze_time(f'{year}-{month:0>2}-{day:0>2} 14:00:00'):
+        model_provider.archive(fake_model)
+
+    expected_archive_key_prefixes = [
+        MODELS_DIR_LATEST,
+        f'{MODELS_DIR_ROOT}/historical/{year}-{month:0>2}/{year}-{month:0>2}-{day:0>2}'
+    ]
+
+    for expected_key_prefix in expected_archive_key_prefixes:
+        expected_model_key = f'{expected_key_prefix}/{MODEL_FILE_NAME}'
+        unpickled_model = pickle.loads(bucket.Object(expected_model_key).get()['Body'].read())
+        assert joblib.hash(unpickled_model) == joblib.hash(fake_model), (
+            f'Model archive at {expected_model_key} did not unpickle into '
+            f'its original form.'
+        )
+
+
+def test_archive_overwrites_the_latest_model_archive(setup_all, fake_dataset, fake_model):
+    _, bucket = setup_all
+    key_for_latest_model_archive = f'{MODELS_DIR_LATEST}/{MODEL_FILE_NAME}'
 
     with freeze_time('2020-01-14 14:00:00'):
-        model_provider.put_all(models)
+        model_provider.archive(fake_model)
 
-    assert get_latest_model() == 'model 1'
+    latest_model_in_archive = pickle.loads(
+        bucket.Object(key_for_latest_model_archive).get()['Body'].read()
+    )
+    assert joblib.hash(latest_model_in_archive) == joblib.hash(fake_model)
 
-    models = {
-        '1': 'updated model 1'
-    }
+    new_model = ParkingAvailabilityModel()
+    new_model.train(fake_dataset.sample(frac=0.5).reset_index(drop=True))
 
     with freeze_time('2020-01-15 14:00:00'):
-        model_provider.put_all(models)
+        model_provider.archive(new_model)
 
-    assert get_latest_model() == 'updated model 1'
+    latest_model_in_archive = pickle.loads(
+        bucket.Object(key_for_latest_model_archive).get()['Body'].read()
+    )
+    assert joblib.hash(latest_model_in_archive) == joblib.hash(new_model)
     assert len(list(bucket.objects.filter(Prefix=MODELS_DIR_LATEST))) == 1
-
-
-def get_latest_model():
-    conn = boto3.resource('s3')
-    bucket = conn.Bucket('dev-parking-prediction')
-
-    latest_content = list(bucket.objects.filter(Prefix=MODELS_DIR_LATEST))
-
-    object = conn.Object('dev-parking-prediction', latest_content[0].key)
-
-    latest_model = pickle.loads(object.get()['Body'].read())
-
-    return latest_model

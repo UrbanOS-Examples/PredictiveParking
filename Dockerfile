@@ -31,7 +31,7 @@ COPY ./tests /tests
 RUN apt-get -y update \
     && apt-get -y install libspatialindex-dev \
     && poetry install
-RUN poetry run pytest /tests
+RUN poetry run python -m pytest /tests
 
 
 FROM base-python as production
