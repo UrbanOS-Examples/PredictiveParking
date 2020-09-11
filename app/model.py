@@ -19,14 +19,12 @@ from pydantic import validate_arguments
 from pydantic import validator
 from sklearn.neural_network import MLPRegressor
 
-from app import model_provider
 from app.constants import DAY_OF_WEEK
 from app.constants import HOURS_END
 from app.constants import HOURS_START
 from app.constants import UNENFORCED_DAYS
 from app.data_formats import APIPrediction
 from app.data_formats import APIPredictionRequest
-
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
@@ -45,12 +43,20 @@ class Model(ABC):
     """An abstract base class for ML models."""
 
     @abstractmethod
-    def train(self, training_data: pd.DataFrame) -> None:
-        ...
+    def __getstate__(self): ...
 
     @abstractmethod
-    def predict(self, data: ModelFeatures) -> List[APIPrediction]:
-        ...
+    def __setstate__(self, state): ...
+
+    @property
+    @abstractmethod
+    def supported_zones(self): ...
+
+    @abstractmethod
+    def train(self, training_data: pd.DataFrame) -> None: ...
+
+    @abstractmethod
+    def predict(self, data: ModelFeatures) -> List[APIPrediction]: ...
 
 
 class ModelFeatures(BaseModel):

@@ -1,8 +1,9 @@
 import datetime as dt
+import pickle
 from typing import Iterable
-from unittest.mock import patch
 
 import hypothesis.strategies as st
+import joblib
 from hypothesis import given
 
 from app import zone_info
@@ -12,7 +13,6 @@ from app.constants import HOURS_START
 from app.constants import TIME_ZONE
 from app.constants import UNENFORCED_DAYS
 from app.data_formats import APIPredictionRequest
-from app.model import ParkingAvailabilityModel
 from app.predictor import ModelFeatures
 
 
@@ -41,23 +41,23 @@ def test_ModelFeatures_can_be_derived_from_prediction_APIPredictionRequest_durin
     assert all(isinstance(sample, ModelFeatures) for sample in samples_batch)
 
 
-@patch('app.model.model_provider')
 @given(
     timestamp=DATETIME_DURING_HOURS_OF_OPERATION,
     zone_ids=VALID_ZONE_IDS
 )
-def test_ParkingAvailabilityModel_returns_one_prediction_per_valid_zone_id(model_provider, timestamp, zone_ids, fake_model):
-    model_provider.get_all.return_value = fake_model
-
+def test_ParkingAvailabilityModel_returns_one_prediction_per_valid_zone_id(timestamp, zone_ids, fake_model):
     prediction_request = APIPredictionRequest(timestamp=timestamp, zone_ids=zone_ids)
     samples_batch = ModelFeatures.from_request(prediction_request)
 
-    predictor = ParkingAvailabilityModel.from_artifact()
-    model_provider.get_all.assert_called()
-    predictions = predictor.predict(samples_batch)
+    predictions = fake_model.predict(samples_batch)
     assert set(predictions.keys()) == set(zone_ids)
 
 
-def test_ParkingAvailabilityModel_is_picklable():
-    ParkingAvailabilityModel()
-    pass
+def test_ParkingAvailabilityModel_is_picklable(fake_model):
+    pickle.dumps(fake_model)
+
+
+def test_ParkingAvailabilityModel_unpickles_into_the_same_model(fake_model):
+    pickled_fake_model = pickle.dumps(fake_model)
+    unpickled_pickled_fake_model = pickle.loads(pickled_fake_model)
+    assert joblib.hash(unpickled_pickled_fake_model) == joblib.hash(fake_model)
