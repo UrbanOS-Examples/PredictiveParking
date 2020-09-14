@@ -60,7 +60,12 @@ def predict_with(models, input_datetime, zone_ids='All'):
     ).rename(
         columns=lambda model_tag: f'{model_tag}Prediction'
     ).assign(
-        zoneId=APIPredictionRequest(zone_ids=zone_ids).zone_ids
+        zoneId=[zone_id
+                for zone_id in APIPredictionRequest(zone_ids=zone_ids).zone_ids
+                if any(
+                    zone_id in model_provider.provide(model).supported_zones
+                    for model in models
+                )]
     ).to_dict('records')
 
 

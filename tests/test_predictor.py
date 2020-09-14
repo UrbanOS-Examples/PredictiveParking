@@ -3,8 +3,8 @@ from datetime import datetime
 from app import predictor
 
 
-def test_predict_results_are_ordered(with_warmup):
-    zone_ids = ['31001', '31006']
+def test_predict_results_are_ordered(with_warmup, all_valid_zone_ids):
+    zone_ids = all_valid_zone_ids[:10:5]
     prediction_zone_ids = [
         prediction['zoneId']
         for prediction in predictor.predict_formatted(datetime(2020, 2, 8, 14), zone_ids)
@@ -33,8 +33,8 @@ def test_predict_returns_no_predictions_on_sundays(with_warmup):
     assert len(predictions) == 0
 
 
-def test_predict_for_provided_zone_ids(with_warmup):
-    zone_ids = ['31001', '31006']
+def test_predict_for_provided_zone_ids(with_warmup, all_valid_zone_ids):
+    zone_ids = all_valid_zone_ids[:12:6]
     predictions = predictor.predict_formatted(datetime(2020, 2, 8, 13, 29, 0), zone_ids)
 
     assert predictions
