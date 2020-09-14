@@ -22,6 +22,9 @@ for noisy_logger_name in ['botocore', 'app.model']:
     logging.getLogger(noisy_logger_name).setLevel(logging.CRITICAL)
 
 
+ALL_VALID_ZONE_IDS = zone_info.zone_ids()[54:]
+
+
 @pytest.yield_fixture(scope='session')
 def event_loop(request):
     loop = asyncio.get_event_loop_policy().new_event_loop()
@@ -43,7 +46,7 @@ async def with_warmup(fake_model_files_in_s3):
 
 @pytest.fixture(scope='session')
 def all_valid_zone_ids():
-    return zone_info.zone_ids()
+    return ALL_VALID_ZONE_IDS
 
 
 @pytest.fixture(scope='session')

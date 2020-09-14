@@ -22,9 +22,9 @@ async def test_no_zone_id_param_returns_all_zones(client, fake_model_files_in_s3
     assert len(json.loads(data)) > 0
 
 
-async def test_zone_ids_restricts_zones(client):
+async def test_zone_ids_restricts_zones(client, all_valid_zone_ids):
     with freeze_time('2020-01-14 14:00:00'):
-        response = await client.get('/api/v1/predictions?zone_ids=31004,31002')
+        response = await client.get(f'/api/v1/predictions?zone_ids={all_valid_zone_ids[1]},{all_valid_zone_ids[0]}')
         data = await response.get_data()
 
     assert response.status_code == 200
@@ -49,9 +49,9 @@ async def test_only_invalid_zone_ids_does_not_return_predictions(client):
     assert len(json.loads(data)) == 0
 
 
-async def test_mixed_invalid_and_valid_zone_ids_returns_predictions_for_valid(client):
+async def test_mixed_invalid_and_valid_zone_ids_returns_predictions_for_valid(client, all_valid_zone_ids):
     with freeze_time('2020-01-14 14:00:00'):
-        response = await client.get('/api/v1/predictions?zone_ids=WQRQWEQ,31004,QWEQWRQ')
+        response = await client.get(f'/api/v1/predictions?zone_ids=WQRQWEQ,{all_valid_zone_ids[0]},QWEQWRQ')
         data = await response.get_data()
 
     assert response.status_code == 200
@@ -82,9 +82,9 @@ async def test_no_zone_id_param_returns_all_zones_compared(client):
     assert first_record['zoneId']
 
 
-async def test_zone_ids_restricts_zones_compared(client):
+async def test_zone_ids_restricts_zones_compared(client, all_valid_zone_ids):
     with freeze_time('2020-01-14 14:00:00'):
-        response = await client.get('/api/v0/predictions?zone_ids=31004,31002')
+        response = await client.get(f'/api/v0/predictions?zone_ids={all_valid_zone_ids[0]},{all_valid_zone_ids[1]}')
         response_data = await response.get_data()
 
     assert response.status_code == 200
@@ -100,10 +100,10 @@ def use_availability_provider(ap):
     app.fybr_availability_provider = og_ap
 
 
-async def test_app_uses_availability_if_its_there(client):
-    zone_with_availability_data = '31006'
-    zone_without_availability_data = '31001'
-    zone_we_did_not_ask_for = '31002'
+async def test_app_uses_availability_if_its_there(client, all_valid_zone_ids):
+    zone_with_availability_data = all_valid_zone_ids[0]
+    zone_without_availability_data = all_valid_zone_ids[1]
+    zone_we_did_not_ask_for = all_valid_zone_ids[2]
     zone_ids = [zone_without_availability_data, zone_with_availability_data]
 
     uri='ws://localhost:5001/socket/websocket'

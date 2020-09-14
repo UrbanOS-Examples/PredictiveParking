@@ -6,7 +6,6 @@ import hypothesis.strategies as st
 import joblib
 from hypothesis import given
 
-from app import zone_info
 from app.constants import DAY_OF_WEEK
 from app.constants import HOURS_END
 from app.constants import HOURS_START
@@ -14,6 +13,7 @@ from app.constants import TIME_ZONE
 from app.constants import UNENFORCED_DAYS
 from app.data_formats import APIPredictionRequest
 from app.predictor import ModelFeatures
+from conftest import ALL_VALID_ZONE_IDS
 
 
 DATETIME_DURING_HOURS_OF_OPERATION = st.builds(
@@ -24,7 +24,7 @@ DATETIME_DURING_HOURS_OF_OPERATION = st.builds(
 )
 
 VALID_ZONE_IDS = st.lists(
-    st.sampled_from(zone_info.zone_ids()),
+    st.sampled_from(ALL_VALID_ZONE_IDS),
     min_size=1,
     max_size=20
 )
