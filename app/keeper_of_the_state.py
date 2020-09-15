@@ -124,7 +124,7 @@ def _fetch_model(id, bucket, model_path):
         return pickle.load(in_memory_file)
 
 
-def archive(model):
+def archive_model(model):
     bucket = _bucket_for_environment()
 
     dated_path = f'{MODELS_DIR_ROOT}/{historical_model_name(date.today())}'

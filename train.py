@@ -64,7 +64,7 @@ def main():
             .pipe(_remove_times_outside_hours_of_operation))
     )
 
-    keeper_of_the_state.archive(model)
+    keeper_of_the_state.archive_model(model)
 
     _validate_variance()
 

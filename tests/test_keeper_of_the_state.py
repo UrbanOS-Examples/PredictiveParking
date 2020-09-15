@@ -33,12 +33,12 @@ async def test_warm_is_resilient(when, fake_model_files_in_s3):
     await keeper_of_the_state.warm_caches()
 
 
-def test_archive_writes_models_to_historical_and_latest_s3_paths(setup_all, fake_model):
+def test_archive_model_writes_models_to_historical_and_latest_s3_paths(setup_all, fake_model):
     _, bucket = setup_all
 
     year, month, day = 2020, 1, 14
     with freeze_time(f'{year}-{month:0>2}-{day:0>2} 14:00:00'):
-        keeper_of_the_state.archive(fake_model)
+        keeper_of_the_state.archive_model(fake_model)
 
     expected_archive_key_prefixes = [
         MODELS_DIR_LATEST,
@@ -54,12 +54,12 @@ def test_archive_writes_models_to_historical_and_latest_s3_paths(setup_all, fake
         )
 
 
-def test_archive_overwrites_the_latest_model_archive(setup_all, fake_dataset, fake_model):
+def test_archive_model_overwrites_the_latest_model_archive(setup_all, fake_dataset, fake_model):
     _, bucket = setup_all
     key_for_latest_model_archive = f'{MODELS_DIR_LATEST}/{MODEL_FILE_NAME}'
 
     with freeze_time('2020-01-14 14:00:00'):
-        keeper_of_the_state.archive(fake_model)
+        keeper_of_the_state.archive_model(fake_model)
 
     latest_model_in_archive = pickle.loads(
         bucket.Object(key_for_latest_model_archive).get()['Body'].read()
@@ -70,7 +70,7 @@ def test_archive_overwrites_the_latest_model_archive(setup_all, fake_dataset, fa
     new_model.train(fake_dataset.sample(frac=0.5).reset_index(drop=True))
 
     with freeze_time('2020-01-15 14:00:00'):
-        keeper_of_the_state.archive(new_model)
+        keeper_of_the_state.archive_model(new_model)
 
     latest_model_in_archive = pickle.loads(
         bucket.Object(key_for_latest_model_archive).get()['Body'].read()
