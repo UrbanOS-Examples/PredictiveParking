@@ -1,10 +1,7 @@
 import io
 import json
-import warnings
 
 import requests
-
-warnings.warn('The zone_info module is no longer in service and will be removed soon™.', DeprecationWarning, stacklevel=2)
 
 
 def meter_and_zone_list():

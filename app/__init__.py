@@ -12,7 +12,7 @@ from quart import request
 from app import keeper_of_the_state
 from app import now_adjusted
 from app import predictor
-from app import zone_info
+from app.fybr import zone_info
 from app.fybr.availability_provider import FybrAvailabilityProvider
 
 LOGGER = logging.getLogger(__name__)
