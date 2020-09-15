@@ -5,6 +5,7 @@ from typing import List
 import pendulum
 import pytz
 
+DISCOVERY_API_QUERY_URL = 'https://data.smartcolumbusos.com/api/v1/query'
 
 MODEL_FILE_NAME = 'mlp_shortnorth_downtown_cluster.pkl'
 

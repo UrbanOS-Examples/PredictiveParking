@@ -6,8 +6,8 @@ import hypothesis.strategies as st
 from hypothesis import given
 from pydantic import BaseModel
 
-from app import zone_info
 from app.data_formats import APIPredictionRequest
+from tests.conftest import ALL_VALID_ZONE_IDS
 
 
 def partially_constructed_model_strategy(
@@ -35,7 +35,7 @@ def partially_constructed_model_strategy(
         unrestricted_parameters={'zone_ids'}
     ),
     zone_ids=st.lists(
-        st.sampled_from(zone_info.zone_ids()),
+        st.sampled_from(ALL_VALID_ZONE_IDS),
         min_size=1,
         max_size=20
     )

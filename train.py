@@ -19,7 +19,7 @@ from prometheus_client import Gauge
 from prometheus_client import push_to_gateway
 from pytz import timezone
 
-from app import model_provider
+from app import keeper_of_the_state
 from app import now_adjusted
 from app import predictor
 from app.constants import DAY_OF_WEEK
@@ -64,7 +64,7 @@ def main():
             .pipe(_remove_times_outside_hours_of_operation))
     )
 
-    model_provider.archive(model)
+    keeper_of_the_state.archive(model)
 
     _validate_variance()
 
@@ -142,10 +142,10 @@ def _remove_times_outside_hours_of_operation(occupancy_dataframe: pd.DataFrame) 
 
 
 def _validate_variance():
-    yesterday_model = model_provider.historical_model_name(date.today() - timedelta(1))
-    today_model = model_provider.historical_model_name(date.today())
+    yesterday_model = keeper_of_the_state.historical_model_name(date.today() - timedelta(1))
+    today_model = keeper_of_the_state.historical_model_name(date.today())
     models = [yesterday_model, today_model]
-    model_provider.warm_model_caches_synchronously(models)
+    keeper_of_the_state.warm_caches_synchronously(models)
 
     now = now_adjusted.adjust(datetime.now(timezone('US/Eastern')))
     today_at_ten = now.replace(hour=10)

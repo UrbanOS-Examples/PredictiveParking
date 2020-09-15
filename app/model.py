@@ -167,7 +167,9 @@ class ParkingAvailabilityModel(Model):
             LOGGER.info(f'Total (row, col) counts: {X_cluster.shape}')
             mlp = MLPRegressor(hidden_layer_sizes=(50, 50), activation='relu')
             mlp.fit(X_cluster, y_cluster)
-            self._zone_models[str(int(zone))] = mlp
+            if np.issubdtype(type(zone), np.float64):
+                zone = str(int(zone))
+            self._zone_models[zone] = mlp
 
         LOGGER.info(f'Successfully trained {len(self._zone_models)} models')
 

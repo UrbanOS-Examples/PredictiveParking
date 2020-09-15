@@ -1,7 +1,7 @@
 import pandas as pd
 from pydantic import ValidationError
 
-from app import model_provider
+from app import keeper_of_the_state
 from app.data_formats import APIPrediction
 from app.data_formats import APIPredictionRequest
 from app.model import ModelFeatures
@@ -36,7 +36,7 @@ def predict(input_datetime, zone_ids='All', model_tag='latest'):
         predictions = {}
     else:
         try:
-            predictions = model_provider.provide(model_tag).predict(
+            predictions = keeper_of_the_state.provide_model(model_tag).predict(
                 ModelFeatures.from_request(
                     APIPredictionRequest(
                         timestamp=input_datetime,
@@ -63,7 +63,7 @@ def predict_with(models, input_datetime, zone_ids='All'):
         zoneId=[zone_id
                 for zone_id in APIPredictionRequest(zone_ids=zone_ids).zone_ids
                 if any(
-                    zone_id in model_provider.provide(model).supported_zones
+                    zone_id in keeper_of_the_state.provide_model(model).supported_zones
                     for model in models
                 )]
     ).to_dict('records')

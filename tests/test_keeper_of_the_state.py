@@ -7,11 +7,11 @@ from freezegun import freeze_time
 from mockito import kwargs
 from moto import mock_s3
 
-from app import model_provider
+from app import keeper_of_the_state
 from app.constants import MODEL_FILE_NAME
+from app.keeper_of_the_state import MODELS_DIR_LATEST
+from app.keeper_of_the_state import MODELS_DIR_ROOT
 from app.model import ParkingAvailabilityModel
-from app.model_provider import MODELS_DIR_LATEST
-from app.model_provider import MODELS_DIR_ROOT
 
 
 @pytest.fixture(scope='function')
@@ -30,7 +30,7 @@ async def test_warm_is_resilient(when, fake_model_files_in_s3):
     (when(boto3).Session(**kwargs)
                 .thenRaise(Exception('this should not crash things'))
                 .thenReturn(actual_boto3_session))
-    await model_provider.warm_model_caches()
+    await keeper_of_the_state.warm_caches()
 
 
 def test_archive_writes_models_to_historical_and_latest_s3_paths(setup_all, fake_model):
@@ -38,7 +38,7 @@ def test_archive_writes_models_to_historical_and_latest_s3_paths(setup_all, fake
 
     year, month, day = 2020, 1, 14
     with freeze_time(f'{year}-{month:0>2}-{day:0>2} 14:00:00'):
-        model_provider.archive(fake_model)
+        keeper_of_the_state.archive(fake_model)
 
     expected_archive_key_prefixes = [
         MODELS_DIR_LATEST,
@@ -59,7 +59,7 @@ def test_archive_overwrites_the_latest_model_archive(setup_all, fake_dataset, fa
     key_for_latest_model_archive = f'{MODELS_DIR_LATEST}/{MODEL_FILE_NAME}'
 
     with freeze_time('2020-01-14 14:00:00'):
-        model_provider.archive(fake_model)
+        keeper_of_the_state.archive(fake_model)
 
     latest_model_in_archive = pickle.loads(
         bucket.Object(key_for_latest_model_archive).get()['Body'].read()
@@ -70,7 +70,7 @@ def test_archive_overwrites_the_latest_model_archive(setup_all, fake_dataset, fa
     new_model.train(fake_dataset.sample(frac=0.5).reset_index(drop=True))
 
     with freeze_time('2020-01-15 14:00:00'):
-        model_provider.archive(new_model)
+        keeper_of_the_state.archive(new_model)
 
     latest_model_in_archive = pickle.loads(
         bucket.Object(key_for_latest_model_archive).get()['Body'].read()
