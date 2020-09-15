@@ -1,4 +1,3 @@
-import asyncio
 import functools
 import itertools
 import logging
@@ -29,13 +28,6 @@ ALL_VALID_ZONE_IDS = [
     'commercial', 'industrial', '2', '3', '5', '7', '11', '13', '17', '19',
     '🦜', '🦜🦜', '🦜🦜🦜', '🦜🦜🦜🦜', '🦜🦜🦜🦜🦜', '🦜🦜🦜🦜🦜🦜', '🦜🦜🦜🦜🦜🦜🦜'
 ]
-
-
-@pytest.yield_fixture(scope='function')
-def event_loop(request):
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest.fixture(scope='function')
