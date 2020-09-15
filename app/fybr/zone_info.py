@@ -1,12 +1,20 @@
 import io
 import json
+import warnings
 
 import requests
 
 
+warnings.warn(
+    'The zone_info module is no longer in service and will be removed soon™.',
+    DeprecationWarning,
+    stacklevel=2
+)
+
+
 def meter_and_zone_list():
     DISCOVERY_API_QUERY_URL = 'https://data.smartcolumbusos.com/api/v1/query'
-    METER_TO_ZONE_LIST_QUERY = '''
+    METER_TO_ZONE_LIST_QUERY = r'''
         WITH
             padded_meter_ids AS (
                 SELECT
