@@ -10,7 +10,6 @@ import pytest
 import responses
 from moto import mock_s3
 
-from app import app
 from app import keeper_of_the_state
 from app.constants import DISCOVERY_API_QUERY_URL
 from app.constants import MODEL_FILE_NAME
@@ -28,11 +27,6 @@ ALL_VALID_ZONE_IDS = [
     'commercial', 'industrial', '2', '3', '5', '7', '11', '13', '17', '19',
     '🦜', '🦜🦜', '🦜🦜🦜', '🦜🦜🦜🦜', '🦜🦜🦜🦜🦜', '🦜🦜🦜🦜🦜🦜', '🦜🦜🦜🦜🦜🦜🦜'
 ]
-
-
-@pytest.fixture(scope='function')
-def client(with_warmup):
-    return app.test_client()
 
 
 @pytest.fixture(scope='function')
