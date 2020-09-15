@@ -9,10 +9,10 @@ from quart import Quart
 from quart import jsonify
 from quart import request
 
-from app import model_provider
+from app import keeper_of_the_state
 from app import now_adjusted
 from app import predictor
-from app import zone_info
+from app.fybr import zone_info
 from app.fybr.availability_provider import FybrAvailabilityProvider
 
 LOGGER = logging.getLogger(__name__)
@@ -35,15 +35,15 @@ async def startup():
     )
     loop = asyncio.get_event_loop()
 
-    LOGGER.info('scheduling availability cache to be filled from stream')
+    LOGGER.info('Scheduling availability cache to be filled from stream')
     app.fybr_availability_streamer = loop.create_task(app.fybr_availability_provider.handle_websocket_messages())
-    LOGGER.info('scheduling model cache to be re-warmed periodically')
-    app.model_fetcher = loop.create_task(model_provider.fetch_models_periodically())
-    LOGGER.info('finished starting API')
+    LOGGER.info('Scheduling model and zone caches to be re-warmed periodically')
+    app.model_fetcher = loop.create_task(keeper_of_the_state.fetch_state_periodically())
+    LOGGER.info('Finished starting API')
 
-    LOGGER.info('warming model cache')
-    await model_provider.warm_model_caches()
-    LOGGER.info('done warming model cache')
+    LOGGER.info('Warming model and zone caches')
+    await keeper_of_the_state.warm_caches()
+    LOGGER.info('Done warming model and zone caches')
 
 
 @app.after_serving
@@ -96,7 +96,7 @@ async def predictions_comparative():
     now = now_adjusted.adjust(datetime.now(timezone('US/Eastern')))
     zone_ids = _parse_zone_ids(request.args.get('zone_ids'))
 
-    results = predictor.predict_with(model_provider.get_comparative_models(), now, zone_ids)
+    results = predictor.predict_with(keeper_of_the_state.get_comparative_models(), now, zone_ids)
     return jsonify(results)
 
 

@@ -13,7 +13,7 @@ from app.constants import TIME_ZONE
 from app.constants import UNENFORCED_DAYS
 from app.data_formats import APIPredictionRequest
 from app.predictor import ModelFeatures
-from conftest import ALL_VALID_ZONE_IDS
+from tests.conftest import ALL_VALID_ZONE_IDS
 
 
 DATETIME_DURING_HOURS_OF_OPERATION = st.builds(
@@ -45,7 +45,7 @@ def test_ModelFeatures_can_be_derived_from_prediction_APIPredictionRequest_durin
     timestamp=DATETIME_DURING_HOURS_OF_OPERATION,
     zone_ids=VALID_ZONE_IDS
 )
-def test_ParkingAvailabilityModel_returns_one_prediction_per_valid_zone_id(timestamp, zone_ids, fake_model):
+def test_ParkingAvailabilityModel_returns_one_prediction_per_valid_zone_id(timestamp, zone_ids, fake_model, with_warmup):
     prediction_request = APIPredictionRequest(timestamp=timestamp, zone_ids=zone_ids)
     samples_batch = ModelFeatures.from_request(prediction_request)
 

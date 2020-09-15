@@ -12,7 +12,7 @@ from datetime import timedelta
 from os import environ
 
 from app import auth_provider
-from app import model_provider
+from app import keeper_of_the_state
 from app import predictor
 
 
@@ -20,7 +20,7 @@ LOCAL_FILE_NAME = "report.csv"
 S3_FILE_NAME = "reports/parking_predictions_daily.csv"
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", help=f"The model to report on. Defaults to the current day's model: {model_provider.historical_model_name(date.today())}")
+parser.add_argument("--model", help=f"The model to report on. Defaults to the current day's model: {keeper_of_the_state.historical_model_name(date.today())}")
 
 
 def _annotate_predictions(predictions, date, report_time, model):
@@ -44,8 +44,8 @@ def _beginning_of_day(day):
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    model = args.model or model_provider.historical_model_name(date.today())
-    model_provider.warm_model_caches_synchronously([model])
+    model = args.model or keeper_of_the_state.historical_model_name(date.today())
+    keeper_of_the_state.warm_caches_synchronously([model])
 
     bucket = _bucket_for_environment()
     bucket.delete_objects(Delete={'Objects': [{"Key": S3_FILE_NAME}]})

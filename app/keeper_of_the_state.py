@@ -6,15 +6,21 @@ import sys
 from datetime import date
 from io import BytesIO
 from itertools import starmap
+from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 
 import backoff
 import botocore
+import requests
 
 from app import auth_provider
+from app.constants import DISCOVERY_API_QUERY_URL
 from app.constants import MODEL_FILE_NAME
-from app.model import ParkingAvailabilityModel
 from app.util import log_exception
+
+if TYPE_CHECKING:
+    from app.model import ParkingAvailabilityModel
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
@@ -28,15 +34,20 @@ MODELS_DIR_ROOT = 'models'
 MODELS_DIR_LATEST = f'{MODELS_DIR_ROOT}/latest'
 
 MODELS = {}
+ZONES = []
 
 
-def provide(model_tag='latest') -> Optional[ParkingAvailabilityModel]:
+def provide_model(model_tag='latest') -> Optional['ParkingAvailabilityModel']:
     return MODELS.get(model_tag, None)
 
 
-def warm_model_caches_synchronously(extra_model_tags=[]):
+def provide_zones() -> List[str]:
+    return ZONES
+
+
+def warm_caches_synchronously(extra_model_tags=[]):
     LOGGER.info('Getting models for prediction')
-    asyncio.get_event_loop().run_until_complete(warm_model_caches(extra_model_tags))
+    asyncio.get_event_loop().run_until_complete(warm_caches(extra_model_tags))
     LOGGER.info('Done getting models for prediction')
 
 
@@ -45,7 +56,7 @@ def historical_model_name(model_date):
 
 
 @backoff.on_exception(backoff.expo, Exception, on_backoff=log_exception)
-async def warm_model_caches(extra_model_tags=[]):
+async def warm_caches(extra_model_tags=[]):
     model_tags = ['latest'] + get_comparative_models() + extra_model_tags
     model_fetches = [_fetch_all(model_tag) for model_tag in model_tags]
 
@@ -54,11 +65,14 @@ async def warm_model_caches(extra_model_tags=[]):
     for tag, model in fetched_models:
         MODELS[tag] = model or {}
 
+    ZONES.clear()
+    ZONES.extend(_fetch_zone_ids())
 
-async def fetch_models_periodically():
+
+async def fetch_state_periodically():
     while True:
         await asyncio.sleep(TTL_SECONDS)
-        await warm_model_caches()
+        await warm_caches()
 
 
 async def _fetch_all(model_tag):
@@ -110,7 +124,7 @@ def _fetch_model(id, bucket, model_path):
         return pickle.load(in_memory_file)
 
 
-def archive(model):
+def archive_model(model):
     bucket = _bucket_for_environment()
 
     dated_path = f'{MODELS_DIR_ROOT}/{historical_model_name(date.today())}'
@@ -140,6 +154,14 @@ def _bucket_for_environment():
     s3 = auth_provider.authorized_s3_resource()
     environment = os.environ.get('SCOS_ENV', 'dev')
     return s3.Bucket(f'{environment}-parking-prediction')
+
+
+def _fetch_zone_ids():
+    data = ('SELECT DISTINCT "pm zone number" '
+            'FROM city_of_columbus__columbus_parking_meters')
+
+    with requests.post(DISCOVERY_API_QUERY_URL, data=data) as response:
+        return sorted(response.text.strip().split('\n')[1:])
 
 
 def get_comparative_models():

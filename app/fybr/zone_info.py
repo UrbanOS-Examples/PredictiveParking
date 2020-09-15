@@ -1,41 +1,20 @@
+import io
 import json
 import warnings
-from io import BytesIO
-from os import path
 
-import pandas as pd
 import requests
 
-warnings.warn('The zone_info module is no longer in service and will be removed soon™.', DeprecationWarning, stacklevel=2)
 
-DIRNAME = path.dirname(path.abspath(__file__))
-METER_FILE_PATH = path.join(
-    DIRNAME,
-    'meter_config',
-    'zone_cluster16_short_north_downtown_15_19.csv'
+warnings.warn(
+    'The zone_info module is no longer in service and will be removed soon™.',
+    DeprecationWarning,
+    stacklevel=2
 )
-ZONE_CLUSTER = pd.read_csv(METER_FILE_PATH)
-
-
-def cluster_ids():
-    return ZONE_CLUSTER.clusterID.unique().tolist()
-
-
-def zone_cluster():
-    return ZONE_CLUSTER
-
-
-def zone_ids():
-    return ZONE_CLUSTER.zoneID.map(str).tolist()
 
 
 def meter_and_zone_list():
-    return _get_meter_and_zone_list_from_api()
-
-
-def _get_meter_and_zone_list_from_api():
     DISCOVERY_API_QUERY_URL = 'https://data.smartcolumbusos.com/api/v1/query'
-    METER_TO_ZONE_LIST_QUERY = '''
+    METER_TO_ZONE_LIST_QUERY = r'''
         WITH
             padded_meter_ids AS (
                 SELECT
@@ -65,7 +44,7 @@ def _get_meter_and_zone_list_from_api():
     '''
     with requests.post(DISCOVERY_API_QUERY_URL, stream=True, params={'_format': 'json'}, data=METER_TO_ZONE_LIST_QUERY) as r:
         r.raise_for_status()
-        with BytesIO() as f:
+        with io.BytesIO() as f:
             for chunk in r.iter_content(chunk_size=8192):
                 f.write(chunk)
 

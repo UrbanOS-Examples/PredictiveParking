@@ -13,6 +13,11 @@ from tests.fake_websocket_server import update_event
 pytestmark = pytest.mark.asyncio
 
 
+@pytest.fixture(scope='function')
+def client(with_warmup):
+    return app.test_client()
+
+
 async def test_no_zone_id_param_returns_all_zones(client, fake_model_files_in_s3):
     with freeze_time('2020-01-14 14:00:00'):
         response = await client.get('/api/v1/predictions')

@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 import pytest
@@ -10,6 +11,13 @@ from mockito import unstub
 from app.fybr.availability_provider import FybrAvailabilityProvider
 from tests.fake_websocket_server import create_fake_server
 from tests.fake_websocket_server import update_event
+
+
+@pytest.yield_fixture(scope='function')
+def event_loop(request):
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.mark.asyncio

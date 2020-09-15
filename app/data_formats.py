@@ -7,8 +7,8 @@ from pydantic import confloat
 from pydantic import constr
 from pydantic import validator
 
-from app import zone_info
 from app.constants import PARK_MOBILE_SUPPLIER_ID
+from app.keeper_of_the_state import provide_zones
 
 
 class APIPredictionRequest(BaseModel):
@@ -21,7 +21,7 @@ class APIPredictionRequest(BaseModel):
 
     @validator('zone_ids', pre=True, always=True)
     def all_zone_ids_are_valid(cls, zone_ids):
-        known_parking_locations = zone_info.zone_ids()
+        known_parking_locations = provide_zones()
         if zone_ids == 'All':
             zone_ids = known_parking_locations
         else:
