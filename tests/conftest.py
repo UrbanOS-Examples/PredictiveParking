@@ -70,12 +70,14 @@ def fake_dataset(all_valid_zone_ids):
         {
             'zone_id': zone_id,
             'semihour': semihour,
-            'occu_cnt_rate': occupancy_rate
+            'occu_cnt_rate': occupancy_rate,
+            'total_cnt': total_cnt
         }
         for zone_id in all_valid_zone_ids
-        for semihour, occupancy_rate in zip(
+        for semihour, occupancy_rate, total_cnt in zip(
             a_week_of_semihours,
-            itertools.repeat(0.2_3_5_7_11_13)
+            itertools.repeat(0.2_3_5_7_11_13),
+            itertools.repeat(21)
         )
     ])
 
@@ -88,10 +90,18 @@ def fake_model(fake_dataset):
 
 
 @pytest.fixture(scope='module')
-def fake_model_files_in_s3(fake_model):
+def aws_credentials():
+    os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
+    os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
+    os.environ['AWS_SECURITY_TOKEN'] = 'testing'
+    os.environ['AWS_SESSION_TOKEN'] = 'testing'
+
+
+@pytest.fixture(scope='module')
+def fake_model_files_in_s3(fake_model, aws_credentials):
     os.environ['COMPARED_MODELS'] = '12month,18month,24month'
     with mock_s3():
-        s3 = boto3.resource('s3')
+        s3 = boto3.resource('s3', region_name='us-east-1')
 
         bucket = s3.Bucket('dev-parking-prediction')
         bucket.create()

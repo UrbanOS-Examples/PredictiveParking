@@ -93,7 +93,7 @@ def _get_occupancy_data_from_database(database_config):
             [city_holiday], [shortnorth_event],
             [no_data]
         FROM [dbo].[parking_zone_occupancy_aggr]
-        WHERE CONVERT(date, semihour) >= CONVERT(date, DATEADD(month, -18, GETUTCDATE()))
+        WHERE CONVERT(date, semihour) >= CONVERT(date, DATEADD(month, -6, GETUTCDATE()))
         ORDER BY zone_name, semihour
     '''
 
