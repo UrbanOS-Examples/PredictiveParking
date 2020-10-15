@@ -1,3 +1,4 @@
+import os
 import pickle
 
 import boto3
@@ -15,9 +16,17 @@ from app.model import ParkingAvailabilityModel
 
 
 @pytest.fixture(scope='function')
-def model_bucket():
+def aws_credentials():
+    os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
+    os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
+    os.environ['AWS_SECURITY_TOKEN'] = 'testing'
+    os.environ['AWS_SESSION_TOKEN'] = 'testing'
+
+
+@pytest.fixture(scope='function')
+def model_bucket(aws_credentials):
     with mock_s3():
-        s3 = boto3.resource('s3')
+        s3 = boto3.resource('s3', region_name='us-east-1')
         bucket = s3.Bucket('dev-parking-prediction')
         bucket.create()
 

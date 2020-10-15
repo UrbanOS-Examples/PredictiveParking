@@ -5,7 +5,7 @@ from typing import List
 
 import pandas as pd
 
-from data_formats import APIPrediction
+from app.data_formats import APIPrediction
 
 
 ModelFeatures = ForwardRef('ModelFeatures')
