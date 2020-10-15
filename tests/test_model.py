@@ -12,7 +12,7 @@ from app.constants import HOURS_START
 from app.constants import TIME_ZONE
 from app.constants import UNENFORCED_DAYS
 from app.data_formats import APIPredictionRequest
-from app.predictor import ModelFeatures
+from app.model import ModelFeatures
 from tests.conftest import ALL_VALID_ZONE_IDS
 
 
