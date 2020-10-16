@@ -20,3 +20,5 @@ data/raw/*.csv
 .python-version
 **/.hypothesis
 **/.coverage
+
+.cache
