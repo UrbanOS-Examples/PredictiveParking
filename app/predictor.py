@@ -44,7 +44,8 @@ def predict(input_datetime, zone_ids='All', model_tag='latest'):
                     )
                 )
             )
-        except ValidationError:
+        except ValidationError as e:
+            print(f'Validation Error: {e}')
             predictions = {}
     return predictions
 

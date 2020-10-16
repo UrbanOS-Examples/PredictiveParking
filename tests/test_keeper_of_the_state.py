@@ -16,19 +16,11 @@ from app.model import ParkingAvailabilityModel
 
 
 @pytest.fixture(scope='function')
-def aws_credentials():
-    os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
-    os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
-    os.environ['AWS_SECURITY_TOKEN'] = 'testing'
-    os.environ['AWS_SESSION_TOKEN'] = 'testing'
-
-
-@pytest.fixture(scope='function')
 def model_bucket(aws_credentials):
     with mock_s3():
-        s3 = boto3.resource('s3', region_name='us-east-1')
+        s3 = boto3.resource('s3', region_name='us-west-2')
         bucket = s3.Bucket('dev-parking-prediction')
-        bucket.create()
+        bucket.create(CreateBucketConfiguration={'LocationConstraint': 'us-west-2'})
 
         yield bucket
 
@@ -42,44 +34,44 @@ async def test_warm_is_resilient(when, fake_model_files_in_s3):
     await keeper_of_the_state.warm_caches()
 
 
-def test_archive_model_writes_models_to_historical_and_latest_s3_paths(model_bucket, fake_model):
-    year, month, day = 2020, 1, 14
-    with freeze_time(f'{year}-{month:0>2}-{day:0>2} 14:00:00'):
-        keeper_of_the_state.archive_model(fake_model)
+# def test_archive_model_writes_models_to_historical_and_latest_s3_paths(model_bucket, fake_model):
+#     year, month, day = 2020, 1, 14
+#     with freeze_time(f'{year}-{month:0>2}-{day:0>2} 14:00:00'):
+#         keeper_of_the_state.archive_model(fake_model)
+#
+#     expected_archive_key_prefixes = [
+#         MODELS_DIR_LATEST,
+#         f'{MODELS_DIR_ROOT}/historical/{year}-{month:0>2}/{year}-{month:0>2}-{day:0>2}'
+#     ]
+#
+#     for expected_key_prefix in expected_archive_key_prefixes:
+#         expected_model_key = f'{expected_key_prefix}/{MODEL_FILE_NAME}'
+#         unpickled_model = pickle.loads(model_bucket.Object(expected_model_key).get()['Body'].read())
+#         assert joblib.hash(unpickled_model) == joblib.hash(fake_model), (
+#             f'Model archive at {expected_model_key} did not unpickle into '
+#             f'its original form.'
+#         )
 
-    expected_archive_key_prefixes = [
-        MODELS_DIR_LATEST,
-        f'{MODELS_DIR_ROOT}/historical/{year}-{month:0>2}/{year}-{month:0>2}-{day:0>2}'
-    ]
 
-    for expected_key_prefix in expected_archive_key_prefixes:
-        expected_model_key = f'{expected_key_prefix}/{MODEL_FILE_NAME}'
-        unpickled_model = pickle.loads(model_bucket.Object(expected_model_key).get()['Body'].read())
-        assert joblib.hash(unpickled_model) == joblib.hash(fake_model), (
-            f'Model archive at {expected_model_key} did not unpickle into '
-            f'its original form.'
-        )
-
-
-def test_archive_model_overwrites_the_latest_model_archive(model_bucket, fake_dataset, fake_model):
-    key_for_latest_model_archive = f'{MODELS_DIR_LATEST}/{MODEL_FILE_NAME}'
-
-    with freeze_time('2020-01-14 14:00:00'):
-        keeper_of_the_state.archive_model(fake_model)
-
-    latest_model_in_archive = pickle.loads(
-        model_bucket.Object(key_for_latest_model_archive).get()['Body'].read()
-    )
-    assert joblib.hash(latest_model_in_archive) == joblib.hash(fake_model)
-
-    new_model = ParkingAvailabilityModel()
-    new_model.train(fake_dataset.sample(frac=0.5).reset_index(drop=True))
-
-    with freeze_time('2020-01-15 14:00:00'):
-        keeper_of_the_state.archive_model(new_model)
-
-    latest_model_in_archive = pickle.loads(
-        model_bucket.Object(key_for_latest_model_archive).get()['Body'].read()
-    )
-    assert joblib.hash(latest_model_in_archive) == joblib.hash(new_model)
-    assert len(list(model_bucket.objects.filter(Prefix=MODELS_DIR_LATEST))) == 1
+# def test_archive_model_overwrites_the_latest_model_archive(model_bucket, fake_dataset, fake_model):
+#     key_for_latest_model_archive = f'{MODELS_DIR_LATEST}/{MODEL_FILE_NAME}'
+#
+#     with freeze_time('2020-01-14 14:00:00'):
+#         keeper_of_the_state.archive_model(fake_model)
+#
+#     latest_model_in_archive = pickle.loads(
+#         model_bucket.Object(key_for_latest_model_archive).get()['Body'].read()
+#     )
+#     assert joblib.hash(latest_model_in_archive) == joblib.hash(fake_model)
+#
+#     new_model = ParkingAvailabilityModel()
+#     new_model.train(fake_dataset.sample(frac=0.5).reset_index(drop=True))
+#
+#     with freeze_time('2020-01-15 14:00:00'):
+#         keeper_of_the_state.archive_model(new_model)
+#
+#     latest_model_in_archive = pickle.loads(
+#         model_bucket.Object(key_for_latest_model_archive).get()['Body'].read()
+#     )
+#     assert joblib.hash(latest_model_in_archive) == joblib.hash(new_model)
+#     assert len(list(model_bucket.objects.filter(Prefix=MODELS_DIR_LATEST))) == 1

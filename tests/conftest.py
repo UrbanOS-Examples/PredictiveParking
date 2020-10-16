@@ -17,15 +17,14 @@ from app.keeper_of_the_state import MODELS_DIR_LATEST
 from app.keeper_of_the_state import MODELS_DIR_ROOT
 from app.model import ParkingAvailabilityModel
 
-for noisy_logger_name in ['botocore', 'app.model']:
+for noisy_logger_name in ['botocore', 'fbprophet', 'app.model']:
     logging.getLogger(noisy_logger_name).setLevel(logging.CRITICAL)
 
 
 ALL_VALID_ZONE_IDS = [
     'twilight', 'auto', 'splash', 'danger', 'red', 'habitable', 'school',
     '-d out', 'spin', 'no spin', 'cal-', 'defense', 'end', 'residential',
-    'commercial', 'industrial', '2', '3', '5', '7', '11', '13', '17', '19',
-    '🦜', '🦜🦜', '🦜🦜🦜', '🦜🦜🦜🦜', '🦜🦜🦜🦜🦜', '🦜🦜🦜🦜🦜🦜', '🦜🦜🦜🦜🦜🦜🦜'
+    # '🦜', '🦜🦜', '🦜🦜🦜', '🦜🦜🦜🦜', '🦜🦜🦜🦜🦜', '🦜🦜🦜🦜🦜🦜'
 ]
 
 
@@ -95,16 +94,17 @@ def aws_credentials():
     os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
     os.environ['AWS_SECURITY_TOKEN'] = 'testing'
     os.environ['AWS_SESSION_TOKEN'] = 'testing'
+    os.environ['AWS_REGION'] = 'us-west-2'
 
 
 @pytest.fixture(scope='module')
 def fake_model_files_in_s3(fake_model, aws_credentials):
     os.environ['COMPARED_MODELS'] = '12month,18month,24month'
     with mock_s3():
-        s3 = boto3.resource('s3', region_name='us-east-1')
+        s3 = boto3.resource('s3', region_name='us-west-2')
 
         bucket = s3.Bucket('dev-parking-prediction')
-        bucket.create()
+        bucket.create(CreateBucketConfiguration={'LocationConstraint': 'us-west-2'})
 
         pickled_model = pickle.dumps(fake_model)
         pickled_model_s3_keys = [
