@@ -40,7 +40,7 @@ def partially_constructed_model_strategy(
         max_size=20
     )
 )
-def test_valid_zone_ids_are_preserved_in_order_within_requests_without_duplication(model_constructor, zone_ids):
+def test_valid_zone_ids_are_preserved_in_order_within_requests_without_duplication(with_warmup, model_constructor, zone_ids):
     request = model_constructor(zone_ids=zone_ids)
 
     added = set()

@@ -61,7 +61,7 @@ class ParkingProphet(Model):
         self._zone_clusterer: Mapping[str, str] = lambda zone_id: zone_id
         self._cluster_models: MutableMapping[str, Prophet] = {}
         self._zone_models: MutableMapping[str, Prophet] = {}
-        self._supported_zones = []
+        self._supported_zones: List[str] = []
 
     def __getstate__(self):
         return {
@@ -82,33 +82,38 @@ class ParkingProphet(Model):
         return self._supported_zones
 
     def train(self, training_data: pd.DataFrame) -> None:
+        self._supported_zones = list(training_data.zone_id.unique())
         self._zone_clusterer = self._derive_zone_clusters(training_data)
         prophet_features = self._derive_prophet_features(training_data, self._zone_clusterer)
         self._cluster_models = self._train_cluster_models(prophet_features)
         self._zone_models = self._train_zone_models(prophet_features)
         LOGGER.info(f'Successfully trained {len(self._zone_models)} models')
 
-    # @validate_arguments
     def predict(self, samples_batch: List[ProphetableFeatures]) -> Mapping[str, float]:
         requested_zone_ids = [sample.zone_id for sample in samples_batch
                               if sample.zone_id in self.supported_zones]
 
-        future = pd.DataFrame({'ds': [pd.Timestamp(sample.at) for sample in samples_batch]})
+        if not samples_batch:
+            return {}
+        requested_time = pd.Timestamp(samples_batch[0].at.replace(tzinfo=None))
+        future = pd.DataFrame({'ds': [requested_time]})
+
         cluster_available_rates = {
-            self._zone_clusterer[zone_id]: self._cluster_models[zone_id].predict(future)
+            self._zone_clusterer[zone_id]: self._cluster_models[self._zone_clusterer[zone_id]].predict(future)
             for zone_id in requested_zone_ids
         }
-
-        return {
-            zone_id: self._zone_models[zone_id].predict(
+        unwrap = lambda x: x[0] if x else x
+        result = {
+            zone_id: unwrap(self._zone_models[zone_id].predict(
                 future.assign(
                     cluster_available_rate=cluster_available_rates[
                         self._zone_clusterer[zone_id]
                     ].yhat.clip(0, 1)
                 )
-            ).yhat.clip(0, 1).tolist()
+            ).yhat.clip(0, 1).tolist())
             for zone_id in requested_zone_ids
         }
+        return result
 
     def _derive_zone_clusters(self, training_data: pd.DataFrame) -> Mapping[str, str]:
         zone_and_cluster_id_pairs = pd.concat(
