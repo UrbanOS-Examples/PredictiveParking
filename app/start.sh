@@ -11,6 +11,7 @@ hypercorn \
         --bind unix:/tmp/hypercorn.sock \
         --error-logfile - \
         --access-logfile - \
+        --config file:/app/hypercorn_config.py \
         app:app
 '
 )
