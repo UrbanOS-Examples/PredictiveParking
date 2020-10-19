@@ -16,10 +16,9 @@ RUN apt-get -y install nginx \
 
 RUN pip3 install 'poetry==1.0.9'
 
-ADD pyproject.toml poetry.lock fbprophet-requirements.txt /
+ADD pyproject.toml poetry.lock /
 
 RUN poetry export -f requirements.txt -o requirements.txt \
-    && pip3 install --requirement fbprophet-requirements.txt \
     && pip3 install --requirement requirements.txt
 
 COPY app /app
