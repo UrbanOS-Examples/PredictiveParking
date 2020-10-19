@@ -57,6 +57,12 @@ Homebrew:
     pip3 install poetry
     poetry install --dev
 ```
+If you are on OS X Catalina try this if `fbprophet` fails to install.
+```bash
+    pip3 install poetry
+    brew install gcc@7
+    CXX=/usr/local/Cellar/gcc@7/7.5.0_2/bin/g++-7 CC=/usr/local/Cellar/gcc@7/7.5.0_2/bin/gcc-7 poetry install
+```
 
 #### Install MicroSoft ODBC Driver 17 for SQL Server
 On macOS, this can be done using Homebrew as follows:
