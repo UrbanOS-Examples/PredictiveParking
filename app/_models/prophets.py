@@ -16,6 +16,8 @@ from tqdm import tqdm
 from app._models.abstract_model import Model
 from app.data_formats import APIPredictionRequest
 
+from fbprophet.serialize import model_to_json, model_from_json
+from itertools import starmap
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
@@ -64,17 +66,29 @@ class ParkingProphet(Model):
         self._supported_zones: List[str] = []
 
     def __getstate__(self):
+        def _to_json(name, model):
+            return name, model_to_json(model)
+
+        serializable_cluster_models = dict(starmap(_to_json, self._cluster_models.items()))
+        serializable_zone_models = dict(starmap(_to_json, self._zone_models.items()))
+
         return {
             'zone_clusterer': self._zone_clusterer,
-            'cluster_models': self._cluster_models,
-            'zone_models': self._zone_models,
+            'cluster_models': serializable_cluster_models,
+            'zone_models': serializable_zone_models,
             'supported_zones': self.supported_zones
         }
 
     def __setstate__(self, state):
+        def _from_json(name, jsonny):
+            return name, model_from_json(jsonny)
+
+        deserialized_cluster_models = dict(starmap(_from_json, state['cluster_models'].items()))
+        deserialized_zone_models = dict(starmap(_from_json, state['zone_models'].items()))
+
         self._zone_clusterer = state['zone_clusterer']
-        self._cluster_models = state['cluster_models']
-        self._zone_models = state['zone_models']
+        self._cluster_models = deserialized_cluster_models
+        self._zone_models = deserialized_zone_models
         self._supported_zones = state['supported_zones']
 
     @property

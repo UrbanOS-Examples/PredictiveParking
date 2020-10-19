@@ -63,7 +63,7 @@ def test_ParkingAvailabilityModel_is_picklable(fake_model):
     pickle.dumps(fake_model)
 
 
-# def test_ParkingAvailabilityModel_unpickles_into_the_same_model(fake_model):
-#     pickled_fake_model = pickle.dumps(fake_model)
-#     unpickled_pickled_fake_model = pickle.loads(pickled_fake_model)
-#     assert joblib.hash(unpickled_pickled_fake_model) == joblib.hash(fake_model)
+def test_ParkingAvailabilityModel_unpickles_into_the_same_model(fake_model):
+    pickled_fake_model = pickle.dumps(fake_model)
+    unpickled_pickled_fake_model = pickle.loads(pickled_fake_model)
+    assert joblib.hash(unpickled_pickled_fake_model) == joblib.hash(fake_model)
