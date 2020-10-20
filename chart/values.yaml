@@ -25,9 +25,17 @@ ingress:
   rootDnsZone: smartcolumbusos.com
 
 resources:
-  limits:
-    memory: 512Mi
-    cpu: 500m
-  requests:
-    memory: 512Mi
-    cpu: 500m
+  api:
+    limits:
+      memory: 4Gi
+      cpu: 500m
+    requests:
+      memory: 4Gi
+      cpu: 500m
+  train:
+    limits:
+      memory: 8Gi
+      cpu: 500m
+    requests:
+      memory: 8Gi
+      cpu: 500m

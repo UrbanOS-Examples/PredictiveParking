@@ -31,4 +31,4 @@ spec:
         - name: COMPARED_MODELS
           value: {{ .Values.comparedModels }}
         resources:
-{{ toYaml .Values.resources | indent 10 }}
+{{ toYaml .Values.resources.api | indent 10 }}
