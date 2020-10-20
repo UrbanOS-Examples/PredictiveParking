@@ -45,7 +45,10 @@ def test_archive_model_writes_models_to_historical_and_latest_s3_paths(model_buc
     for expected_key_prefix in expected_archive_key_prefixes:
         expected_model_key = f'{expected_key_prefix}/{MODEL_FILE_NAME}'
         unpickled_model = pickle.loads(model_bucket.Object(expected_model_key).get()['Body'].read())
-        assert joblib.hash(unpickled_model) == joblib.hash(fake_model), (
+        assert (
+            joblib.hash(unpickled_model) == joblib.hash(fake_model)
+            or unpickled_model == fake_model
+        ), (
             f'Model archive at {expected_model_key} did not unpickle into '
             f'its original form.'
         )
@@ -60,7 +63,10 @@ def test_archive_model_overwrites_the_latest_model_archive(model_bucket, fake_da
     latest_model_in_archive = pickle.loads(
         model_bucket.Object(key_for_latest_model_archive).get()['Body'].read()
     )
-    assert joblib.hash(latest_model_in_archive) == joblib.hash(fake_model)
+    assert (
+        joblib.hash(latest_model_in_archive) == joblib.hash(fake_model)
+        or latest_model_in_archive == fake_model
+    )
 
     new_model = ParkingAvailabilityModel()
     new_model.train(fake_dataset.sample(frac=0.5).reset_index(drop=True))
@@ -71,5 +77,8 @@ def test_archive_model_overwrites_the_latest_model_archive(model_bucket, fake_da
     latest_model_in_archive = pickle.loads(
         model_bucket.Object(key_for_latest_model_archive).get()['Body'].read()
     )
-    assert joblib.hash(latest_model_in_archive) == joblib.hash(new_model)
+    assert (
+        joblib.hash(latest_model_in_archive) == joblib.hash(new_model)
+        or latest_model_in_archive == new_model
+    )
     assert len(list(model_bucket.objects.filter(Prefix=MODELS_DIR_LATEST))) == 1
