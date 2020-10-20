@@ -27,12 +27,12 @@ RUN chmod +x app/start.sh
 RUN chmod +x app/train.sh
 
 
-# FROM base-python as test
-# COPY ./tests /tests
-# RUN apt-get -y update \
-#     && apt-get -y install libspatialindex-dev \
-#     && poetry install
-# RUN poetry run python -m pytest /tests
+FROM base-python as test
+COPY ./tests /tests
+RUN apt-get -y update \
+    && apt-get -y install libspatialindex-dev \
+    && poetry install
+RUN poetry run python -m pytest /tests
 
 
 FROM base-python as production

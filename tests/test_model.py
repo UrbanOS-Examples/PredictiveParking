@@ -2,18 +2,16 @@ import datetime as dt
 import pickle
 from typing import Iterable
 
-import hypothesis
 import hypothesis.strategies as st
 import joblib
-from hypothesis import given
-
+import pendulum
 from app.constants import DAY_OF_WEEK
-from app.constants import HOURS_END
 from app.constants import HOURS_START
 from app.constants import TIME_ZONE
 from app.constants import UNENFORCED_DAYS
 from app.data_formats import APIPredictionRequest
 from app.model import ModelFeatures
+from hypothesis import given
 from tests.conftest import ALL_VALID_ZONE_IDS
 
 DATETIME_DURING_HOURS_OF_OPERATION = st.builds(
@@ -24,7 +22,7 @@ DATETIME_DURING_HOURS_OF_OPERATION = st.builds(
     ).filter(
         lambda dt: DAY_OF_WEEK(dt.weekday()) not in UNENFORCED_DAYS
     ),
-    time=st.times(HOURS_START, HOURS_END),
+    time=st.times(HOURS_START, pendulum.time(21, 59, 59, 999999)),
     tzinfo=st.sampled_from([TIME_ZONE, None])
 )
 
@@ -46,7 +44,6 @@ def test_ModelFeatures_can_be_derived_from_prediction_APIPredictionRequest_durin
     assert all(isinstance(sample, ModelFeatures) for sample in samples_batch)
 
 
-@hypothesis.settings(deadline=1000000)
 @given(
     timestamp=DATETIME_DURING_HOURS_OF_OPERATION,
     zone_ids=VALID_ZONE_IDS
