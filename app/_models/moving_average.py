@@ -103,13 +103,13 @@ class AvailabilityAverager(Model):
                 lambda group: group.shift().rolling(self.weeks_to_average, 1).mean()
             ).dropna().clip(0, 1)
         )
-        self._supported_zones = list(training_data.zone_id.unique())
         self._rolling_averages = training_data[
             [
                 'zone_id', 'semihour', 'semihour_tuples', 'dayofweek',
                 f'available_rate_{self.weeks_to_average:0>2}w'
             ]
         ].dropna()
+        self._supported_zones = list(self._rolling_averages.zone_id.unique())
 
     # @validate_arguments
     def predict(self, samples_batch: List[AverageFeatures]) -> Mapping[str, float]:
@@ -136,6 +136,9 @@ class AvailabilityAverager(Model):
             ).loc[
                 lambda df: df.date_diff == df.date_diff.min()
             ]
-            predictions[sample.zone_id] = zone_averages[f'available_rate_{self.weeks_to_average:0>2}w'].iloc[0]
+            try:
+                predictions[sample.zone_id] = zone_averages[f'available_rate_{self.weeks_to_average:0>2}w'].iloc[0]
+            except IndexError:
+                continue
 
         return predictions
