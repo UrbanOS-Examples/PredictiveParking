@@ -66,7 +66,7 @@ def main():
 
     keeper_of_the_state.archive_model(model)
 
-    _validate_variance()
+    # _validate_variance()
 
 
 def _get_database_config():
