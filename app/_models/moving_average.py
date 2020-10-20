@@ -56,6 +56,14 @@ class AvailabilityAverager(Model):
         self._supported_zones: List[str] = []
         self._weeks_to_average = weeks_to_average
 
+    def __eq__(self, other):
+        return (
+            isinstance(other, AvailabilityAverager) and
+            (self._rolling_averages == other._rolling_averages).all().all() and
+            (self.supported_zones == other.supported_zones) and
+            (self.weeks_to_average == other.weeks_to_average)
+        )
+
     def __getstate__(self):
         return {
             'rolling_averages': self._rolling_averages,
@@ -95,13 +103,13 @@ class AvailabilityAverager(Model):
                 lambda group: group.shift().rolling(self.weeks_to_average, 1).mean()
             ).dropna().clip(0, 1)
         )
-        self._supported_zones = training_data.zone_id.unique()
+        self._supported_zones = list(training_data.zone_id.unique())
         self._rolling_averages = training_data[
             [
-                'zone_id', 'semihour', 'semihour_tuples',
+                'zone_id', 'semihour', 'semihour_tuples', 'dayofweek',
                 f'available_rate_{self.weeks_to_average:0>2}w'
             ]
-        ]
+        ].dropna()
 
     # @validate_arguments
     def predict(self, samples_batch: List[AverageFeatures]) -> Mapping[str, float]:
@@ -111,10 +119,14 @@ class AvailabilityAverager(Model):
         predictions = {}
         for sample in valid_requests:
             sample_timestamp = pd.Timestamp(sample.at)
-            sample_semihour_tuple = (sample_timestamp.hour, 30 * (sample_timestamp.minute // 30))
+            sample_semihour_tuple = (
+                sample_timestamp.hour,
+                30 * (sample_timestamp.minute // 30)
+            )
             zone_averages = self._rolling_averages.loc[
                 lambda df: (
                     df.semihour_tuples.isin({sample_semihour_tuple})
+                    & (df.dayofweek == sample_timestamp.dayofweek)
                     & (df.zone_id == sample.zone_id)
                 )
             ]
