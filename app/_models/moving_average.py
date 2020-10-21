@@ -57,9 +57,18 @@ class AvailabilityAverager(Model):
         self._weeks_to_average = weeks_to_average
 
     def __eq__(self, other):
+        if not isinstance(other, AvailabilityAverager):
+            return False
+        rolling_average_ids = set(self._rolling_averages.keys())
+        other_rolling_average_ids = set(other._rolling_averages.keys())
         return (
-            isinstance(other, AvailabilityAverager) and
-            (self._rolling_averages == other._rolling_averages).all().all() and
+            (rolling_average_ids == other_rolling_average_ids) and
+            all(
+                (
+                    self._rolling_averages[key] == other._rolling_averages[key]
+                ).all().all()
+                for key in rolling_average_ids
+            ) and
             (self.supported_zones == other.supported_zones) and
             (self.weeks_to_average == other.weeks_to_average)
         )
@@ -103,13 +112,20 @@ class AvailabilityAverager(Model):
                 lambda group: group.shift().rolling(self.weeks_to_average, 1).mean()
             ).dropna().clip(0, 1)
         )
-        self._rolling_averages = training_data[
+        training_data = training_data[
             [
                 'zone_id', 'semihour', 'semihour_tuples', 'dayofweek',
                 f'available_rate_{self.weeks_to_average:0>2}w'
             ]
         ].dropna()
-        self._supported_zones = list(self._rolling_averages.zone_id.unique())
+
+        self._rolling_averages = {
+            zone_day_time: data_in_zone_on_day_at_time
+            for zone_day_time, data_in_zone_on_day_at_time
+            in training_data.groupby(['zone_id', 'dayofweek',
+                                      'semihour_tuples'])
+        }
+        self._supported_zones = list(self._rolling_averages.keys())
 
     # @validate_arguments
     def predict(self, samples_batch: List[AverageFeatures]) -> Mapping[str, float]:
@@ -123,21 +139,24 @@ class AvailabilityAverager(Model):
                 sample_timestamp.hour,
                 30 * (sample_timestamp.minute // 30)
             )
-            zone_averages = self._rolling_averages.loc[
-                lambda df: (
-                    df.semihour_tuples.isin({sample_semihour_tuple})
-                    & (df.dayofweek == sample_timestamp.dayofweek)
-                    & (df.zone_id == sample.zone_id)
-                )
-            ]
 
-            zone_averages = zone_averages.assign(
-                date_diff=lambda df: -(df.semihour.dt.date - sample_timestamp.date())
+
+            rolling_averages = self._rolling_averages[(
+                sample.zone_id,
+                sample_timestamp.dayofweek,
+                sample_semihour_tuple
+            )]
+
+            rolling_averages = rolling_averages.assign(
+                date_diff=lambda df: -(
+                    df.semihour.dt.date - sample_timestamp.date()
+                )
             ).loc[
                 lambda df: df.date_diff == df.date_diff.min()
             ]
+
             try:
-                predictions[sample.zone_id] = zone_averages[f'available_rate_{self.weeks_to_average:0>2}w'].iloc[0]
+                predictions[sample.zone_id] = rolling_averages[f'available_rate_{self.weeks_to_average:0>2}w'].iloc[0]
             except IndexError:
                 continue
 
