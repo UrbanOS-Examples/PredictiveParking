@@ -6,4 +6,4 @@ python /train.py
 
 set +e
 
-python /report.py
+# python /report.py
