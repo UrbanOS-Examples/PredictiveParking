@@ -13,7 +13,7 @@ from app.constants import UNENFORCED_DAYS
 from app.data_formats import APIPredictionRequest
 from app.model import ModelFeatures
 from hypothesis import given
-from predictor import to_api_format
+from app.predictor import to_api_format
 from tests.conftest import ALL_VALID_ZONE_IDS
 
 DATETIME_DURING_HOURS_OF_OPERATION = st.builds(

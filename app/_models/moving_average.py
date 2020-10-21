@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from pydantic import constr
 from pydantic import validate_arguments
 
+import numpy as np
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
@@ -125,7 +126,13 @@ class AvailabilityAverager(Model):
             in training_data.groupby(['zone_id', 'dayofweek',
                                       'semihour_tuples'])
         }
-        self._supported_zones = list(self._rolling_averages.keys())
+        def _get_zone_from_key(key):
+            zone_id, _d, _s = key
+            return zone_id
+
+        zone_list = list(map(_get_zone_from_key, self._rolling_averages.keys()))
+        unique_zone_list = np.unique(np.array(zone_list))
+        self._supported_zones = unique_zone_list
 
     # @validate_arguments
     def predict(self, samples_batch: List[AverageFeatures]) -> Mapping[str, float]:
@@ -146,6 +153,7 @@ class AvailabilityAverager(Model):
                 sample_timestamp.dayofweek,
                 sample_semihour_tuple
             )]
+            print('rolling', rolling_averages)
 
             rolling_averages = rolling_averages.assign(
                 date_diff=lambda df: -(
