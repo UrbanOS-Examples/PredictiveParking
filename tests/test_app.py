@@ -7,8 +7,7 @@ from freezegun import freeze_time
 
 from app import app
 from app.fybr.availability_provider import FybrAvailabilityProvider
-from tests.fake_websocket_server import create_fake_server
-from tests.fake_websocket_server import update_event
+from tests.fake_websocket_server import create_fake_server, update_event
 
 pytestmark = pytest.mark.asyncio
 

@@ -5,9 +5,7 @@ from functools import reduce
 from itertools import starmap
 from operator import itemgetter
 
-from dateutil import parser
-from dateutil import tz
-
+from dateutil import parser, tz
 
 INVALID_AFTER_MINUTES = 5
 

@@ -1,23 +1,17 @@
 import logging
 import sys
 from datetime import datetime
-from typing import ForwardRef
-from typing import List
-from typing import Mapping
-from typing import MutableMapping
+from itertools import starmap
+from typing import ForwardRef, List, Mapping, MutableMapping
 
 import pandas as pd
 from fbprophet import Prophet
-from pydantic import BaseModel
-from pydantic import constr
-from pydantic import validate_arguments
+from fbprophet.serialize import model_from_json, model_to_json
+from pydantic import BaseModel, constr, validate_arguments
 from tqdm import tqdm
 
 from app._models.abstract_model import Model
 from app.data_formats import APIPredictionRequest
-
-from fbprophet.serialize import model_to_json, model_from_json
-from itertools import starmap
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)

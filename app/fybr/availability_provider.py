@@ -10,7 +10,6 @@ from dateutil import tz
 import app.fybr.availability_tracker as fybr_availability_tracker
 from app.util import log_exception
 
-
 DATASET_STREAM_SYSTEM_NAME = 'fybr__short_north_parking_occupancy'
 JOIN_MESSAGE = json.dumps({
     'topic': f'streaming:{DATASET_STREAM_SYSTEM_NAME}',

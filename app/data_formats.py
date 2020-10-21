@@ -1,11 +1,7 @@
 from datetime import datetime
-from typing import List
-from typing import Literal
+from typing import List, Literal
 
-from pydantic import BaseModel
-from pydantic import confloat
-from pydantic import constr
-from pydantic import validator
+from pydantic import BaseModel, confloat, constr, validator
 
 from app.constants import PARK_MOBILE_SUPPLIER_ID
 from app.keeper_of_the_state import provide_zones

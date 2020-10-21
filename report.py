@@ -6,15 +6,10 @@ days before and after today's date.
 """
 import argparse
 import csv
-from datetime import date
-from datetime import datetime
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 from os import environ
 
-from app import auth_provider
-from app import keeper_of_the_state
-from app import predictor
-
+from app import auth_provider, keeper_of_the_state, predictor
 
 LOCAL_FILE_NAME = "report.csv"
 S3_FILE_NAME = "reports/parking_predictions_daily.csv"

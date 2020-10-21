@@ -1,12 +1,9 @@
-from abc import ABC
-from abc import abstractmethod
-from typing import ForwardRef
-from typing import List
+from abc import ABC, abstractmethod
+from typing import ForwardRef, List
 
 import pandas as pd
 
 from app.data_formats import APIPrediction
-
 
 ModelFeatures = ForwardRef('ModelFeatures')
 

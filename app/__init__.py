@@ -1,17 +1,12 @@
 import asyncio
 import logging
 from datetime import datetime
-from typing import List
-from typing import Union
+from typing import List, Union
 
 from pytz import timezone
-from quart import Quart
-from quart import jsonify
-from quart import request
+from quart import Quart, jsonify, request
 
-from app import keeper_of_the_state
-from app import now_adjusted
-from app import predictor
+from app import keeper_of_the_state, now_adjusted, predictor
 from app.fybr import zone_info
 from app.fybr.availability_provider import FybrAvailabilityProvider
 

@@ -1,18 +1,14 @@
 import logging
 import sys
 from datetime import datetime
-from typing import ForwardRef
-from typing import List
-from typing import Mapping
-
-import pandas as pd
-from app._models.abstract_model import Model
-from app.data_formats import APIPredictionRequest
-from pydantic import BaseModel
-from pydantic import constr
-from pydantic import validate_arguments
+from typing import ForwardRef, List, Mapping
 
 import numpy as np
+import pandas as pd
+from pydantic import BaseModel, constr, validate_arguments
+
+from app._models.abstract_model import Model
+from app.data_formats import APIPredictionRequest
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)

@@ -2,8 +2,7 @@ import pandas as pd
 from pydantic import ValidationError
 
 from app import keeper_of_the_state
-from app.data_formats import APIPrediction
-from app.data_formats import APIPredictionRequest
+from app.data_formats import APIPrediction, APIPredictionRequest
 from app.model import ModelFeatures
 
 

@@ -6,17 +6,14 @@ import sys
 from datetime import date
 from io import BytesIO
 from itertools import starmap
-from typing import List
-from typing import Optional
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 import backoff
 import botocore
 import requests
 
 from app import auth_provider
-from app.constants import DISCOVERY_API_QUERY_URL
-from app.constants import MODEL_FILE_NAME
+from app.constants import DISCOVERY_API_QUERY_URL, MODEL_FILE_NAME
 from app.util import log_exception
 
 if TYPE_CHECKING:

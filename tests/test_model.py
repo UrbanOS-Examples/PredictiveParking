@@ -6,13 +6,11 @@ from typing import Iterable
 import hypothesis.strategies as st
 import joblib
 import pendulum
-from app.constants import DAY_OF_WEEK
-from app.constants import HOURS_START
-from app.constants import TIME_ZONE
-from app.constants import UNENFORCED_DAYS
+from hypothesis import given
+
+from app.constants import DAY_OF_WEEK, HOURS_START, TIME_ZONE, UNENFORCED_DAYS
 from app.data_formats import APIPredictionRequest
 from app.model import ModelFeatures
-from hypothesis import given
 from app.predictor import to_api_format
 from tests.conftest import ALL_VALID_ZONE_IDS
 

@@ -9,13 +9,12 @@ import numpy as np
 import pandas as pd
 import pytest
 import responses
-from app import keeper_of_the_state
-from app.constants import DISCOVERY_API_QUERY_URL
-from app.constants import MODEL_FILE_NAME
-from app.keeper_of_the_state import MODELS_DIR_LATEST
-from app.keeper_of_the_state import MODELS_DIR_ROOT
-from app.model import ParkingAvailabilityModel
 from moto import mock_s3
+
+from app import keeper_of_the_state
+from app.constants import DISCOVERY_API_QUERY_URL, MODEL_FILE_NAME
+from app.keeper_of_the_state import MODELS_DIR_LATEST, MODELS_DIR_ROOT
+from app.model import ParkingAvailabilityModel
 
 for noisy_logger_name in ['botocore', 'fbprophet', 'app.model']:
     logging.getLogger(noisy_logger_name).setLevel(logging.CRITICAL)
