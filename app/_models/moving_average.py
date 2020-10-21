@@ -131,7 +131,7 @@ class AvailabilityAverager(Model):
             return zone_id
 
         zone_list = list(map(_get_zone_from_key, self._rolling_averages.keys()))
-        unique_zone_list = np.unique(np.array(zone_list))
+        unique_zone_list = np.unique(np.array(zone_list)).tolist()
         self._supported_zones = unique_zone_list
 
     # @validate_arguments
