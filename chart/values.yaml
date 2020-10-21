@@ -28,14 +28,14 @@ resources:
   api:
     limits:
       memory: 4Gi
-      cpu: 500m
+      cpu: "1"
     requests:
       memory: 4Gi
-      cpu: 500m
+      cpu: "1"
   train:
     limits:
-      memory: 8Gi
-      cpu: 500m
+      memory: 5Gi
+      cpu: "1"
     requests:
-      memory: 8Gi
-      cpu: 500m
+      memory: 5Gi
+      cpu: "1"
