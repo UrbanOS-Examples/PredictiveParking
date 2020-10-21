@@ -122,6 +122,7 @@ class AvailabilityAverager(Model):
             in training_data.groupby(['zone_id', 'dayofweek',
                                       'semihour_tuples'])
         }
+
         def _get_zone_from_key(key):
             zone_id, _d, _s = key
             return zone_id
@@ -129,6 +130,7 @@ class AvailabilityAverager(Model):
         zone_list = list(map(_get_zone_from_key, self._rolling_averages.keys()))
         unique_zone_list = np.unique(np.array(zone_list)).tolist()
         self._supported_zones = unique_zone_list
+
 
     # @validate_arguments
     def predict(self, samples_batch: List[AverageFeatures]) -> Mapping[str, float]:
@@ -142,14 +144,14 @@ class AvailabilityAverager(Model):
                 sample_timestamp.hour,
                 30 * (sample_timestamp.minute // 30)
             )
-
-
-            rolling_averages = self._rolling_averages[(
+            rolling_averages = self._rolling_averages.get((
                 sample.zone_id,
                 sample_timestamp.dayofweek,
                 sample_semihour_tuple
-            )]
-            print('rolling', rolling_averages)
+            ), pd.DataFrame())
+
+            if rolling_averages.empty:
+                continue
 
             rolling_averages = rolling_averages.assign(
                 date_diff=lambda df: -(
