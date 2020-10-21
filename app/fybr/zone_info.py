@@ -4,7 +4,6 @@ import warnings
 
 import requests
 
-
 warnings.warn(
     'The zone_info module is no longer in service and will be removed soon™.',
     DeprecationWarning,

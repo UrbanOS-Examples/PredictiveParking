@@ -3,14 +3,14 @@ import pickle
 import boto3
 import joblib
 import pytest
-from app import keeper_of_the_state
-from app.constants import MODEL_FILE_NAME
-from app.keeper_of_the_state import MODELS_DIR_LATEST
-from app.keeper_of_the_state import MODELS_DIR_ROOT
-from app.model import ParkingAvailabilityModel
 from freezegun import freeze_time
 from mockito import kwargs
 from moto import mock_s3
+
+from app import keeper_of_the_state
+from app.constants import MODEL_FILE_NAME
+from app.keeper_of_the_state import MODELS_DIR_LATEST, MODELS_DIR_ROOT
+from app.model import ParkingAvailabilityModel
 
 
 @pytest.fixture(scope='function')

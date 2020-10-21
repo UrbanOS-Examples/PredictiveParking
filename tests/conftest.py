@@ -5,16 +5,16 @@ import os
 import pickle
 
 import boto3
+import numpy as np
 import pandas as pd
 import pytest
 import responses
-from app import keeper_of_the_state
-from app.constants import DISCOVERY_API_QUERY_URL
-from app.constants import MODEL_FILE_NAME
-from app.keeper_of_the_state import MODELS_DIR_LATEST
-from app.keeper_of_the_state import MODELS_DIR_ROOT
-from app.model import ParkingAvailabilityModel
 from moto import mock_s3
+
+from app import keeper_of_the_state
+from app.constants import DISCOVERY_API_QUERY_URL, MODEL_FILE_NAME
+from app.keeper_of_the_state import MODELS_DIR_LATEST, MODELS_DIR_ROOT
+from app.model import ParkingAvailabilityModel
 
 for noisy_logger_name in ['botocore', 'fbprophet', 'app.model']:
     logging.getLogger(noisy_logger_name).setLevel(logging.CRITICAL)
@@ -22,8 +22,10 @@ for noisy_logger_name in ['botocore', 'fbprophet', 'app.model']:
 
 ALL_VALID_ZONE_IDS = [
     'twilight', 'auto', 'splash', 'danger', 'red', 'habitable', 'school',
-    '-d out', 'spin', 'no spin', 'cal-', 'defense', 'end', 'residential',
-    # '🦜', '🦜🦜', '🦜🦜🦜', '🦜🦜🦜🦜', '🦜🦜🦜🦜🦜', '🦜🦜🦜🦜🦜🦜'
+    '-d out', 'spin', 'no spin', 'cal-', 'defense', 'end', 'residential'
+] + [
+    parrot_count * '🦜'
+    for parrot_count in range(1, 11)
 ]
 
 
@@ -50,19 +52,21 @@ def all_valid_zone_ids():
 
 @pytest.fixture(scope='module')
 def fake_dataset(all_valid_zone_ids):
-    a_week_of_semihours = functools.reduce(
+    weeks_of_semihours = functools.reduce(
         lambda current_dates, new_dates: current_dates + new_dates.tolist(),
         [
             pd.date_range(
-                start=f'2020-09-{day:0>2} 08:00',
-                end=f'2020-09-{day:0>2} 22:00',
+                start=pd.Timestamp('2020-08-31 08:00') + pd.Timedelta(weeks=week),
+                end=pd.Timestamp('2020-09-05 22:00') + pd.Timedelta(weeks=week),
                 freq='30min',
                 closed='left'
             )
-            for day in range(7, 13 + 14)
+            for week in range(4)
         ],
         []
     )
+
+    rng = np.random.default_rng(seed=42)
 
     return pd.DataFrame.from_records([
         {
@@ -73,8 +77,11 @@ def fake_dataset(all_valid_zone_ids):
         }
         for zone_id in all_valid_zone_ids
         for semihour, occupancy_rate, total_cnt in zip(
-            a_week_of_semihours,
-            itertools.repeat(0.2_3_5_7_11_13),
+            weeks_of_semihours,
+            itertools.accumulate(
+                itertools.repeat(0),
+                lambda _, __: rng.uniform()
+            ),
             itertools.repeat(21)
         )
     ])

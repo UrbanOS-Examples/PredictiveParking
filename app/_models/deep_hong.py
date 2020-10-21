@@ -1,24 +1,14 @@
 import logging
 import sys
-from typing import ForwardRef
-from typing import List
-from typing import Mapping
-from typing import MutableMapping
+from typing import ForwardRef, List, Mapping, MutableMapping
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel
-from pydantic import conlist
-from pydantic import validate_arguments
-from pydantic import validator
+from pydantic import BaseModel, conlist, validate_arguments, validator
 from sklearn.neural_network import MLPRegressor
 
-from app._models.abstract_model import Model
-from app._models.abstract_model import ModelFeatures
-from app.constants import DAY_OF_WEEK
-from app.constants import HOURS_END
-from app.constants import HOURS_START
-from app.constants import UNENFORCED_DAYS
+from app._models.abstract_model import Model, ModelFeatures
+from app.constants import DAY_OF_WEEK, HOURS_END, HOURS_START, UNENFORCED_DAYS
 from app.data_formats import APIPredictionRequest
 
 LOGGER = logging.getLogger(__name__)

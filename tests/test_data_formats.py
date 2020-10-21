@@ -1,6 +1,5 @@
 from functools import wraps
-from typing import Iterable
-from typing import Type
+from typing import Iterable, Type
 
 import hypothesis.strategies as st
 from hypothesis import given

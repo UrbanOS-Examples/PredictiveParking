@@ -1,17 +1,17 @@
 import datetime as dt
 import pickle
+import time
 from typing import Iterable
 
 import hypothesis.strategies as st
 import joblib
 import pendulum
-from app.constants import DAY_OF_WEEK
-from app.constants import HOURS_START
-from app.constants import TIME_ZONE
-from app.constants import UNENFORCED_DAYS
+from hypothesis import given
+
+from app.constants import DAY_OF_WEEK, HOURS_START, TIME_ZONE, UNENFORCED_DAYS
 from app.data_formats import APIPredictionRequest
 from app.model import ModelFeatures
-from hypothesis import given
+from app.predictor import to_api_format
 from tests.conftest import ALL_VALID_ZONE_IDS
 
 DATETIME_DURING_HOURS_OF_OPERATION = st.builds(
@@ -67,3 +67,32 @@ def test_ParkingAvailabilityModel_unpickles_into_the_same_model(fake_model):
         joblib.hash(unpickled_pickled_fake_model) == joblib.hash(fake_model)
         or unpickled_pickled_fake_model == fake_model
     )
+
+
+def test_ParkingAvailabilityModel_predict_runs_in_under_a_second(fake_model):
+    """
+    A poor man's profiler. It's best run after cranking the size of the
+    fake_dataset fixture up to 11 (500+ unique zone IDs, a year of fake
+    records, etc.).
+    """
+    timestamp = dt.datetime(
+        year=2020,
+        month=10,
+        day=20,
+        hour=15,
+        minute=25,
+        second=35,
+        tzinfo=TIME_ZONE
+    )
+    start_time = time.time()
+    to_api_format(
+    fake_model.predict(
+        ModelFeatures.from_request(
+            APIPredictionRequest(
+                timestamp=timestamp,
+                zone_ids=ALL_VALID_ZONE_IDS
+            )
+        )
+    ))
+    end_time = time.time()
+    assert end_time - start_time < 1

@@ -4,13 +4,10 @@ from contextlib import asynccontextmanager
 import pytest
 import websockets
 from freezegun import freeze_time
-from mockito import mock
-from mockito import patch
-from mockito import unstub
+from mockito import mock, patch, unstub
 
 from app.fybr.availability_provider import FybrAvailabilityProvider
-from tests.fake_websocket_server import create_fake_server
-from tests.fake_websocket_server import update_event
+from tests.fake_websocket_server import create_fake_server, update_event
 
 
 @pytest.yield_fixture(scope='function')

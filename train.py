@@ -5,25 +5,17 @@ import getpass
 import logging
 import os
 import sys
-from dataclasses import InitVar
-from dataclasses import dataclass
-from datetime import date
-from datetime import datetime
-from datetime import timedelta
+from dataclasses import InitVar, dataclass
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
 import pyodbc
-from prometheus_client import CollectorRegistry
-from prometheus_client import Gauge
-from prometheus_client import push_to_gateway
+from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
 from pytz import timezone
 
-from app import keeper_of_the_state
-from app import now_adjusted
-from app import predictor
-from app.constants import DAY_OF_WEEK
-from app.constants import UNENFORCED_DAYS
+from app import keeper_of_the_state, now_adjusted, predictor
+from app.constants import DAY_OF_WEEK, UNENFORCED_DAYS
 from app.model import ParkingAvailabilityModel
 
 LOGGER = logging.getLogger(__name__)

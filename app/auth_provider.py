@@ -1,8 +1,9 @@
-from os import path, environ
-from cachetools import cached, LRUCache
-import hvac
+from os import environ, path
+
 import boto3
 import botocore
+import hvac
+from cachetools import LRUCache, cached
 
 DEFAULT_VAULT_URL = 'http://vault.vault:8200'
 DEFAULT_TOKEN_FILE_PATH = '/var/run/secrets/kubernetes.io/serviceaccount/token'

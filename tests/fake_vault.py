@@ -1,5 +1,6 @@
-from dotmap import DotMap
 from functools import partial
+
+from dotmap import DotMap
 
 
 class FakeVaultClient():
