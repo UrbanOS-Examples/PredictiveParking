@@ -162,4 +162,9 @@ def _fetch_zone_ids():
 
 
 def get_comparative_models():
-    return os.getenv('COMPARED_MODELS', '12month,18month,24month').split(',')
+    from_env = os.getenv('COMPARED_MODELS', '')
+
+    if from_env == '':
+        return []
+    else:
+        return from_env.split(',')

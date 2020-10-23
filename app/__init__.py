@@ -88,10 +88,15 @@ def _override_availability_predictions_with_known_values(predictions):
 
 @app.route('/api/v0/predictions')
 async def predictions_comparative():
+    comparative_models = keeper_of_the_state.get_comparative_models()
+
+    if len(comparative_models) == 0:
+        return jsonify([])
+
     now = now_adjusted.adjust(datetime.now(timezone('US/Eastern')))
     zone_ids = _parse_zone_ids(request.args.get('zone_ids'))
 
-    results = predictor.predict_with(keeper_of_the_state.get_comparative_models(), now, zone_ids)
+    results = predictor.predict_with(comparative_models, now, zone_ids)
     return jsonify(results)
 
 
