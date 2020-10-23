@@ -12,5 +12,5 @@ def log_exception(details):
 
 
 def log_to_both(message):
-    print(error)
-    logging.error(message)
+    print(message)
+    logging.warn(message)
