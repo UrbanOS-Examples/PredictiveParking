@@ -5,6 +5,9 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: {{ .Chart.Name }}
+  annotations:
+    prometheus.io/port: "9113"
+    prometheus.io/scrape: "true"
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -32,3 +35,12 @@ spec:
           value: {{ .Values.comparedModels }}
         resources:
 {{ toYaml .Values.resources.api | indent 10 }}
+      - name: {{ .Chart.Name }}-metrics
+        image: nginx/nginx-prometheus-exporter:0.8.0
+        args: ["-nginx.scrape-uri", "http://127.0.0.1:8080/stub_status"]
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: 9113
+        env:
+        - name: LISTEN_ADDRESS
+          value: ":9113"
